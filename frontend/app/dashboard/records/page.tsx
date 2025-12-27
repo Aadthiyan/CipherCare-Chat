@@ -178,7 +178,7 @@ export default function RecordsPage() {
         const matchesSearch =
             patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             patient.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            patient.condition.toLowerCase().includes(searchTerm.toLowerCase());
+            (patient.condition?.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
         const matchesCategory = selectedCategory === 'All Categories' ||
             (patient.recentRecords && patient.recentRecords.some(record => record.category === selectedCategory));
@@ -330,8 +330,8 @@ export default function RecordsPage() {
                                                 {patient.name}
                                             </h3>
                                             <span className="text-sm text-slate-500 font-mono">#{patient.id}</span>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getRiskColor(patient.riskLevel)}`}>
-                                                {patient.riskLevel} Risk
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getRiskColor(patient.riskLevel || 'Low')}`}>
+                                                {patient.riskLevel || 'Low'} Risk
                                             </span>
                                         </div>
 

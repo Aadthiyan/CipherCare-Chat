@@ -58,6 +58,17 @@ See https://nextjs.org/blog/CVE-2025-66478
 ✅ All fixes have been committed and pushed to GitHub
 ✅ Vercel will automatically detect the changes and trigger a new build
 
+### Commits:
+1. **198ec88** - "Fix Vercel build errors: TypeScript, ESLint, and Next.js config issues"
+   - Fixed patient record detail page TypeScript error
+   - Fixed ESLint configuration
+   - Fixed Next.js config
+   - Upgraded Next.js to 16.0.10
+
+2. **b4ea218** - "Fix TypeScript error in patient records list page"
+   - Fixed the same TypeScript error in the patient records list page
+   - Removed unnecessary `axiosInstance` check
+
 ## Next Steps
 
 1. Monitor the Vercel deployment dashboard for the new build
