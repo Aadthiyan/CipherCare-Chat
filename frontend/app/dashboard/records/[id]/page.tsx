@@ -35,7 +35,7 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
             }
         };
 
-        if (axiosInstance && id) {
+        if (id) {
             fetchPatientDetails();
         }
     }, [axiosInstance, id]);
