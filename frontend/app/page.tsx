@@ -3,6 +3,9 @@
 import Link from 'next/link';
 import { Heart, Activity, Lock, Shield, Stethoscope, Users, FileText, Zap } from 'lucide-react';
 
+// Force dynamic rendering to avoid static generation memory issues
+export const dynamic = 'force-dynamic';
+
 export default function Home() {
   return (
     <div className="min-h-screen bg-[#0a0e1a] flex flex-col relative overflow-hidden medical-grid">

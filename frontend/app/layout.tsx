@@ -4,6 +4,9 @@ import { Toaster } from "@/components/ui/toaster";
 import { Providers } from "./providers";
 import "./globals.css";
 
+// Force dynamic rendering to avoid static generation memory issues
+export const dynamic = 'force-dynamic';
+
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {

@@ -1,11 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Skip static generation during build to avoid memory issues
-  // Pages will be generated on-demand (Incremental Static Regeneration)
-  typescript: {
-    ignoreBuildErrors: false,
-  },
+  // Use streaming for dynamic rendering to avoid static generation memory issues
+  output: 'standalone',
 
   // Memory optimization for Vercel builds
   experimental: {
@@ -23,9 +20,6 @@ const nextConfig: NextConfig = {
     maxInactiveAge: 1 * 60 * 1000, // 1 minute
     pagesBufferLength: 1,
   },
-
-  // Skip full static optimization during build
-  staticPageGenerationTimeout: undefined,
 };
 
 export default nextConfig;
