@@ -1,0 +1,6 @@
+[embedding]
+model_name = "emilyalsen/Bio_ClinicalBERT"
+# model_name = "sentence-transformers/all-MiniLM-L6-v2" # Faster alternative for testing
+batch_size = 32
+max_length = 512
+device = "cpu" # or "cuda"

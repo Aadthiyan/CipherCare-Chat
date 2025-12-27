@@ -1,0 +1,277 @@
+# CipherCare Baseline Performance Metrics Template
+# ================================================
+# Record baseline measurements and hardware specifications for benchmarking
+
+## Test Execution Date
+test_date: "2024-12-16"
+test_duration: "4 hours"
+test_environment: "Development"
+
+## Hardware Specifications
+hardware:
+  cpu:
+    model: ""  # e.g., "Intel Core i7-12700K"
+    cores: 0
+    frequency_ghz: 0.0
+    cache_mb: 0
+  
+  gpu:
+    model: ""  # e.g., "NVIDIA RTX 3080" or "None"
+    vram_gb: 0
+    cuda_available: false
+  
+  memory:
+    total_gb: 0
+    available_gb: 0
+    type: ""  # e.g., "DDR5 6000 MHz"
+  
+  disk:
+    total_gb: 0
+    available_gb: 0
+    type: ""  # e.g., "NVMe SSD"
+  
+  network:
+    interface: ""  # e.g., "Ethernet 1Gbps"
+    latency_ms: 0.0
+
+## Software Stack
+software:
+  os: ""  # e.g., "Ubuntu 22.04"
+  python_version: ""  # e.g., "3.10.0"
+  backend_framework: "FastAPI"
+  embedding_model: "MiniLM-L6-v2"
+  llm_model: ""  # e.g., "GPT-3.5"
+  database: "CyborgDB"
+  cache: "Redis"
+
+## Baseline Measurements (Components)
+
+### Embedding Generation
+embedding:
+  p50_ms: 0.0
+  p95_ms: 0.0
+  p99_ms: 0.0
+  mean_ms: 0.0
+  max_ms: 0.0
+  success_rate: 100.0
+  notes: ""
+
+### Vector Search
+search:
+  p50_ms: 0.0
+  p95_ms: 0.0
+  p99_ms: 0.0
+  mean_ms: 0.0
+  max_ms: 0.0
+  vectors_indexed: 0
+  success_rate: 100.0
+  notes: ""
+
+### LLM Inference
+llm:
+  p50_ms: 0.0
+  p95_ms: 0.0
+  p99_ms: 0.0
+  mean_ms: 0.0
+  max_ms: 0.0
+  tokens_per_second: 0.0
+  success_rate: 100.0
+  notes: ""
+
+### API Response Time
+api:
+  p50_ms: 0.0
+  p95_ms: 0.0
+  p99_ms: 0.0
+  mean_ms: 0.0
+  max_ms: 0.0
+  success_rate: 100.0
+  notes: ""
+
+### End-to-End Query
+e2e:
+  p50_ms: 0.0
+  p95_ms: 0.0
+  p99_ms: 0.0
+  mean_ms: 0.0
+  max_ms: 0.0
+  success_rate: 100.0
+  breakdown:
+    embedding_pct: 0.0
+    search_pct: 0.0
+    llm_pct: 0.0
+  notes: ""
+
+## Load Testing Results
+
+### Scenario 1: Steady State (5 users, 10 min)
+steady_state:
+  concurrent_users: 5
+  duration_minutes: 10
+  p95_latency_ms: 0.0
+  p99_latency_ms: 0.0
+  error_rate_pct: 0.0
+  throughput_rps: 0.0
+  cpu_mean_pct: 0.0
+  cpu_max_pct: 0.0
+  memory_mean_pct: 0.0
+  memory_max_pct: 0.0
+  passed: false
+  notes: ""
+
+### Scenario 2: Peak Load (50 users, 5 min)
+peak_load:
+  concurrent_users: 50
+  duration_minutes: 5
+  p95_latency_ms: 0.0
+  p99_latency_ms: 0.0
+  error_rate_pct: 0.0
+  throughput_rps: 0.0
+  cpu_mean_pct: 0.0
+  cpu_max_pct: 0.0
+  memory_mean_pct: 0.0
+  memory_max_pct: 0.0
+  passed: false
+  notes: ""
+
+### Scenario 3: Stress Test (100 users, 2 min)
+stress_test:
+  concurrent_users: 100
+  duration_minutes: 2
+  p95_latency_ms: 0.0
+  p99_latency_ms: 0.0
+  error_rate_pct: 0.0
+  throughput_rps: 0.0
+  cpu_mean_pct: 0.0
+  cpu_max_pct: 0.0
+  memory_mean_pct: 0.0
+  memory_max_pct: 0.0
+  system_behavior: ""  # e.g., "Queued requests gracefully"
+  passed: false
+  notes: ""
+
+### Scenario 4: Sustained Load (20 users, 1 hour)
+sustained_load:
+  concurrent_users: 20
+  duration_minutes: 60
+  p50_latency_ms: 0.0
+  p95_latency_ms: 0.0
+  p99_latency_ms: 0.0
+  mean_latency_ms: 0.0
+  error_rate_pct: 0.0
+  throughput_rps: 0.0
+  cpu_mean_pct: 0.0
+  cpu_max_pct: 0.0
+  memory_mean_pct: 0.0
+  memory_max_pct: 0.0
+  memory_leak_detected: false
+  uptime_pct: 100.0
+  passed: false
+  notes: ""
+
+## Resource Utilization Summary
+resource_summary:
+  cpu_usage:
+    idle_time_pct: 0.0
+    sustained_peak_pct: 0.0
+    thermal_throttling: false
+  
+  memory_usage:
+    peak_gb: 0.0
+    available_during_peak_gb: 0.0
+    swap_used_gb: 0.0
+    leak_detected: false
+  
+  disk_io:
+    max_read_mbps: 0.0
+    max_write_mbps: 0.0
+  
+  network_io:
+    max_bandwidth_mbps: 0.0
+    packet_loss_pct: 0.0
+    jitter_ms: 0.0
+
+## Performance Targets vs Actual
+performance_targets:
+  - metric: "Query Latency (p99)"
+    target: "<5 seconds"
+    actual: "? ms"
+    status: "?"
+    
+  - metric: "Throughput"
+    target: "≥10 concurrent users"
+    actual: "? RPS"
+    status: "?"
+    
+  - metric: "Error Rate (steady state)"
+    target: "<1%"
+    actual: "? %"
+    status: "?"
+    
+  - metric: "Resource Utilization"
+    target: "<80% CPU, <80% RAM"
+    actual: "? %"
+    status: "?"
+    
+  - metric: "Uptime (1-hour test)"
+    target: "≥99%"
+    actual: "? %"
+    status: "?"
+
+## Bottleneck Analysis
+bottlenecks:
+  - description: ""
+    impact: ""  # High/Medium/Low
+    root_cause: ""
+    recommendation: ""
+
+## Optimization Opportunities
+optimizations:
+  - area: ""
+    description: ""
+    estimated_improvement: ""
+    priority: ""  # High/Medium/Low
+    effort: ""  # High/Medium/Low
+
+## Scaling Recommendations
+scaling:
+  horizontal:
+    recommended_instances: 0
+    reasoning: ""
+  
+  caching:
+    enabled: false
+    recommendations: ""
+  
+  database:
+    optimization: ""
+    recommendations: ""
+  
+  async_processing:
+    enabled: false
+    recommendations: ""
+
+## Findings & Conclusions
+findings: |
+  - Summary of key findings
+  - Performance characteristics
+  - Areas of concern
+  - Areas of strength
+
+recommendations: |
+  - Recommendations for improvements
+  - Priority actions
+  - Testing approach for optimizations
+
+## Test Notes & Issues
+notes: |
+  - Any issues encountered during testing
+  - Workarounds applied
+  - Anomalies observed
+  - Environmental factors that may have affected results
+
+## Signature
+tester_name: ""
+tester_email: ""
+validation_date: ""
+reviewed_by: ""

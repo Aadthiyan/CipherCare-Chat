@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  # CyborgDB Service (Vector Store Provider)
+  cyborgdb:
+    image: cyborgdb-service:latest
+    container_name: cyborgdb
+    ports:
+      - "5432:5432" # Assuming it exposes a postgres-compatible port or similar
+    environment:
+      - CYBORGDB_API_KEY=${CYBORGDB_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+    networks:
+      - chatbot-net
+
+  # Placeholder for Backend (FastAPI)
+  # backend:
+  #   build: ./backend
+  #   ports:
+  #     - "8000:8000"
+  #   env_file: .env
+  #   depends_on:
+  #     - cyborgdb
+
+  # Placeholder for Frontend
+  # frontend:
+  #   build: ./frontend
+  #   ports:
+  #     - "3000:3000"
+
+networks:
+  chatbot-net:
+    driver: bridge

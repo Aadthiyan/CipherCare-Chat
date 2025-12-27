@@ -1,0 +1,9 @@
+[
+    {
+        "model": "emilyalsentzer/Bio_ClinicalBERT",
+        "status": "active",
+        "dimensions": 768,
+        "quantization": "fp32",
+        "description": "Embeddings for clinical notes using BioClinicalBERT"
+    }
+]

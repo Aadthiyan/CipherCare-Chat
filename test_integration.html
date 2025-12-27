@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CipherCare Integration Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        .container {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        h1 {
+            color: #10b981;
+            border-bottom: 2px solid #10b981;
+            padding-bottom: 10px;
+        }
+        .status {
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+        }
+        .success { background: #064e3b; border-left: 4px solid #10b981; }
+        .error { background: #7f1d1d; border-left: 4px solid #ef4444; }
+        .info { background: #1e3a8a; border-left: 4px solid #3b82f6; }
+        button {
+            background: #10b981;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover { background: #059669; }
+        button:disabled { background: #6b7280; cursor: not-allowed; }
+        #results { margin-top: 20px; }
+        pre {
+            background: #0f172a;
+            padding: 15px;
+            border-radius: 8px;
+            overflow-x: auto;
+        }
+        .loader {
+            border: 4px solid #1e293b;
+            border-top: 4px solid #10b981;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin: 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 CipherCare Frontend ↔ Backend Integration Test</h1>
+        
+        <div class="status info">
+            <strong>Configuration:</strong><br>
+            Frontend: http://localhost:3000<br>
+            Backend: http://localhost:8000<br>
+            Test User: attending / password123
+        </div>
+
+        <button onclick="runFullTest()">Run Full Integration Test</button>
+        <button onclick="testBackendDirect()">Test Backend Direct</button>
+        <button onclick="testFrontendProxy()">Test Frontend Proxy</button>
+        <button onclick="clearResults()">Clear Results</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const BACKEND_URL = 'http://localhost:8000';
+        const FRONTEND_URL = 'http://localhost:3000';
+        let accessToken = null;
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `status ${type}`;
+            div.innerHTML = message;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        async function testBackendHealth() {
+            log('Testing backend health...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/health`);
+                const data = await response.json();
+                log(`✓ Backend is UP: ${JSON.stringify(data)}`, 'success');
+                return true;
+            } catch (error) {
+                log(`✗ Backend is DOWN: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function login() {
+            log('Logging in to backend...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'attending',
+                        password: 'password123'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Login failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                accessToken = data.access_token;
+                log(`✓ Login successful! Token: ${accessToken.substring(0, 30)}...`, 'success');
+                return true;
+            } catch (error) {
+                log(`✗ Login failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function queryBackendDirect() {
+            log('Querying backend directly...', 'info');
+            try {
+                const response = await fetch(`${BACKEND_URL}/api/v1/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        patient_id: 'P123',
+                        question: 'What is the patient medical history?',
+                        retrieve_k: 3
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`Query failed: ${response.status}`);
+                }
+
+                const data = await response.json();
+                log(`✓ Backend query successful!`, 'success');
+                log(`<pre>${JSON.stringify(data, null, 2).substring(0, 500)}...</pre>`, 'info');
+                return true;
+            } catch (error) {
+                log(`✗ Backend query failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function queryFrontendProxy() {
+            log('Querying through frontend proxy...', 'info');
+            try {
+                const response = await fetch(`${FRONTEND_URL}/api/query`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${accessToken}`
+                    },
+                    body: JSON.stringify({
+                        patient_id: 'P123',
+                        question: 'What medications is the patient taking?',
+                        retrieve_k: 3
+                    })
+                });
+
+                if (!response.ok) {
+                    const error = await response.text();
+                    throw new Error(`Query failed: ${response.status} - ${error}`);
+                }
+
+                const data = await response.json();
+                log(`✓ Frontend proxy query successful!`, 'success');
+                log(`<pre>${JSON.stringify(data, null, 2).substring(0, 500)}...</pre>`, 'info');
+                return true;
+            } catch (error) {
+                log(`✗ Frontend proxy query failed: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        async function runFullTest() {
+            clearResults();
+            log('Starting full integration test...', 'info');
+            log('<div class="loader"></div>',  'info');
+
+            const healthOk = await testBackendHealth();
+            if (!healthOk) {
+                log('⚠ Please start the backend first!', 'error');
+                return;
+            }
+
+            const loginOk = await login();
+            if (!loginOk) {
+                log('⚠ Cannot proceed without authentication', 'error');
+                return;
+            }
+
+            await queryBackendDirect();
+            await queryFrontendProxy();
+
+            log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'success');
+            log('✓ INTEGRATION TEST COMPLETE!', 'success');
+            log('Both frontend and backend are correctly configured.', 'success');
+        }
+
+        async function testBackendDirect() {
+            clearResults();
+            if (!accessToken) {
+                const loginOk = await login();
+                if (!loginOk) return;
+            }
+            await queryBackendDirect();
+        }
+
+        async function testFrontendProxy() {
+            clearResults();
+            if (!accessToken) {
+                const loginOk = await login();
+                if (!loginOk) return;
+            }
+            await queryFrontendProxy();
+        }
+    </script>
+</body>
+</html>

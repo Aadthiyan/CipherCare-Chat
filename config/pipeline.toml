@@ -1,0 +1,11 @@
+[storage]
+raw_data_path = "data/synthetic/synthetic_fhir_dataset.json"
+processed_data_path = "data/processed/deidentified_dataset.json"
+
+[batch]
+size = 100
+timeout_seconds = 600
+
+[retry]
+max_retries = 3
+retry_delay_seconds = 5

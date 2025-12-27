@@ -1,0 +1,371 @@
+{
+  "dashboard": {
+    "title": "CipherCare Performance Dashboard",
+    "tags": ["performance", "benchmarking", "ciphercare"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 1,
+    "refresh": "5s",
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
+    "panels": [
+      {
+        "id": 1,
+        "title": "Query Latency (p50, p95, p99)",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.5, rate(http_request_duration_seconds_bucket{endpoint=\"/query\"}[5m]))",
+            "legendFormat": "p50",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint=\"/query\"}[5m]))",
+            "legendFormat": "p95",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{endpoint=\"/query\"}[5m]))",
+            "legendFormat": "p99",
+            "refId": "C"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (seconds)",
+            "format": "s",
+            "min": 0,
+            "max": 10
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 5,
+            "color": "red",
+            "fill": true,
+            "line": true,
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Request Throughput",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 0
+        },
+        "targets": [
+          {
+            "expr": "rate(http_requests_total{endpoint=\"/query\"}[1m])",
+            "legendFormat": "Requests/sec",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Requests per second",
+            "format": "rps"
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Error Rate",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "(rate(http_requests_total{status=~\"5..\",endpoint=\"/query\"}[5m]) / rate(http_requests_total{endpoint=\"/query\"}[5m])) * 100",
+            "legendFormat": "Error Rate %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Error Rate (%)",
+            "format": "percent",
+            "min": 0,
+            "max": 10
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 1,
+            "color": "yellow",
+            "fill": true,
+            "line": true,
+            "op": "gt"
+          },
+          {
+            "value": 2,
+            "color": "red",
+            "fill": true,
+            "line": true,
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "CPU Usage",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 8
+        },
+        "targets": [
+          {
+            "expr": "(100 - (avg(irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100))",
+            "legendFormat": "CPU %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "CPU Usage (%)",
+            "format": "percent",
+            "min": 0,
+            "max": 100
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 80,
+            "color": "red",
+            "fill": true,
+            "line": true,
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 5,
+        "title": "Memory Usage",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100",
+            "legendFormat": "Memory %",
+            "refId": "A"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Memory Usage (%)",
+            "format": "percent",
+            "min": 0,
+            "max": 100
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 80,
+            "color": "red",
+            "fill": true,
+            "line": true,
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 6,
+        "title": "Embedding Generation Latency",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 16
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(embedding_generation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(embedding_generation_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (ms)",
+            "format": "ms",
+            "min": 0,
+            "max": 500
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 200,
+            "color": "red",
+            "fill": true,
+            "line": true,
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 7,
+        "title": "Search Latency",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(search_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(search_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (ms)",
+            "format": "ms",
+            "min": 0,
+            "max": 1000
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 500,
+            "color": "red",
+            "fill": true,
+            "line": true,
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 8,
+        "title": "LLM Inference Latency",
+        "type": "graph",
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 24
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, rate(llm_inference_duration_seconds_bucket[5m]))",
+            "legendFormat": "p95",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.99, rate(llm_inference_duration_seconds_bucket[5m]))",
+            "legendFormat": "p99",
+            "refId": "B"
+          }
+        ],
+        "yaxes": [
+          {
+            "label": "Latency (seconds)",
+            "format": "s",
+            "min": 0,
+            "max": 10
+          }
+        ],
+        "thresholds": [
+          {
+            "value": 5,
+            "color": "red",
+            "fill": true,
+            "line": true,
+            "op": "gt"
+          }
+        ]
+      },
+      {
+        "id": 9,
+        "title": "Active Connections",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 0,
+          "y": 32
+        },
+        "targets": [
+          {
+            "expr": "increase(http_connections_total[5m])",
+            "legendFormat": "Active",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 10,
+        "title": "Total Requests",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 6,
+          "y": 32
+        },
+        "targets": [
+          {
+            "expr": "increase(http_requests_total[5m])",
+            "legendFormat": "Total",
+            "refId": "A"
+          }
+        ]
+      },
+      {
+        "id": 11,
+        "title": "Service Health",
+        "type": "stat",
+        "gridPos": {
+          "h": 4,
+          "w": 6,
+          "x": 12,
+          "y": 32
+        },
+        "targets": [
+          {
+            "expr": "up{job=~\"ciphercare-.*\"}",
+            "legendFormat": "{{ job }}",
+            "refId": "A"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,11 @@
+[PHI Regex Check] Checked 100 documents. Found 0 issues.
+[K-Anonymity] Calculating for k=2...
+[K-Anonymity] Minimum K found: 1
+[K-Anonymity] 92 groups failed (Count < 2): ...
+[Integrity] Patient Count: 100
+[Integrity] Condition Count: 100
+[Integrity] Conditions per Patient: 1.00
+[Integrity] PASSED. Plausible clinical density.
+=== VALIDATION SUMMARY ===
+Result: FAILURE
+** REMIDIATION **: For Hackathon, K-Anonymity failures in synthetic data are acceptable if logic works. In prod, generalize BirthDate to Age Range.

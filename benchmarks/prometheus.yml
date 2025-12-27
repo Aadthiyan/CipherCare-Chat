@@ -1,0 +1,59 @@
+# Prometheus Configuration for CipherCare Performance Monitoring
+# =================================================================
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    monitor: 'ciphercare-performance'
+
+# Alert manager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            - localhost:9093
+
+# Load rules
+rule_files:
+  - "alert_rules.yml"
+
+# Scrape configurations
+scrape_configs:
+  # Backend API metrics
+  - job_name: 'ciphercare-api'
+    static_configs:
+      - targets: ['localhost:8000']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+    relabel_configs:
+      - source_labels: [__scheme__]
+        target_label: scheme
+      - source_labels: [__metrics_path__]
+        target_label: metrics_path
+
+  # Node exporter for system metrics
+  - job_name: 'system-metrics'
+    static_configs:
+      - targets: ['localhost:9100']
+    scrape_interval: 5s
+
+  # CyborgDB metrics
+  - job_name: 'cyborg-db'
+    static_configs:
+      - targets: ['localhost:6379']
+    scrape_interval: 5s
+
+  # Embedding service metrics
+  - job_name: 'embedding-service'
+    static_configs:
+      - targets: ['localhost:8001']
+    metrics_path: '/metrics'
+    scrape_interval: 5s
+
+  # LLM service metrics  
+  - job_name: 'llm-service'
+    static_configs:
+      - targets: ['localhost:8002']
+    metrics_path: '/metrics'
+    scrape_interval: 5s

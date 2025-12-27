@@ -1,0 +1,5 @@
+[key_management]
+master_key_pool_id = "us-east-1"
+rotation_schedule = "90d"
+algorithm = "AES-256-GCM"
+key_wrapping = "envelope"

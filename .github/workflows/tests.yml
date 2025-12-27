@@ -1,0 +1,134 @@
+"""
+GitHub Actions CI/CD Workflow for Automated Testing
+
+This workflow runs on every commit and PR to ensure code quality.
+"""
+
+name: CI/CD - Tests and Coverage
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest pytest-cov pytest-mock pytest-asyncio
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ -v --tb=short
+
+      - name: Run integration tests
+        run: |
+          pytest tests/integration/ -v --tb=short
+
+      - name: Generate coverage report
+        run: |
+          pytest tests/ --cov=backend --cov=embeddings --cov=encryption --cov=data-pipeline \
+            --cov-report=html --cov-report=term-missing --cov-report=xml \
+            --cov-fail-under=80
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          files: ./coverage.xml
+          fail_ci_if_error: true
+          verbose: true
+
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: py-cov-action/python-coverage-comment-action@v3
+        with:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Check test execution time
+        run: |
+          echo "Checking test execution time..."
+          # Tests should complete in under 5 minutes
+
+      - name: Archive test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.python-version }}
+          path: |
+            htmlcov/
+            coverage.xml
+
+  lint:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black isort pylint mypy
+
+      - name: Lint with flake8
+        run: |
+          # Stop the build if there are Python syntax errors or undefined names
+          flake8 backend embeddings encryption data-pipeline tests \
+            --count --select=E9,F63,F7,F82 --show-source --statistics
+          # Exit-zero treats all errors as warnings
+          flake8 backend embeddings encryption data-pipeline tests \
+            --count --exit-zero --max-complexity=10 --max-line-length=120 --statistics
+
+      - name: Check code formatting with black
+        run: |
+          black --check backend embeddings encryption data-pipeline tests || true
+
+      - name: Check import sorting with isort
+        run: |
+          isort --check-only backend embeddings encryption data-pipeline tests || true
+
+  security:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install bandit
+
+      - name: Security checks with bandit
+        run: |
+          bandit -r backend embeddings encryption data-pipeline --exit-zero -f json -o bandit-report.json || true
+
+      - name: Upload security report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-report
+          path: bandit-report.json

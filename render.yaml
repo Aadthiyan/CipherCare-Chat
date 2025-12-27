@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: cipercare-backend
+    runtime: python311
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port 8000 --workers 1
+    
+    envVars:
+      # Core Configuration
+      - key: EMBEDDING_MODEL
+        value: sentence-transformers/all-mpnet-base-v2
+      - key: VECTOR_DB_TYPE
+        value: cyborgdb
+      
+      # CyborgDB Configuration (if using cyborgdb locally)
+      - key: CYBORGDB_API_KEY
+        fromEnvName: CYBORGDB_API_KEY
+      - key: CYBORGDB_BASE_URL
+        value: http://localhost:8002
+      
+      # Optional: Pinecone Configuration (only if VECTOR_DB_TYPE=pinecone)
+      # - key: PINECONE_API_KEY
+      #   fromEnvName: PINECONE_API_KEY
+      # - key: PINECONE_ENV
+      #   value: gcp-starter
+      
+      # Security
+      - key: JWT_SECRET_KEY
+        fromEnvName: JWT_SECRET_KEY
+      
+      # Logging
+      - key: LOG_LEVEL
+        value: INFO
+      - key: ENVIRONMENT
+        value: production
+
+# Configuration Notes:
+# 1. Uses CyborgDB as primary vector database (local)
+# 2. All embeddings are 768-dimensional (all-mpnet-base-v2)
+# 3. PHI scrubbing via lightweight regex (no Spacy needed)
+# 4. For Pinecone persistence on Render, change VECTOR_DB_TYPE and add PINECONE_* vars
+

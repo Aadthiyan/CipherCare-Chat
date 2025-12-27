@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Frontend Token</title>
+</head>
+<body>
+    <h1>Frontend Token Check</h1>
+    <div id="result"></div>
+    
+    <script>
+        const token = localStorage.getItem('access_token');
+        const refreshToken = localStorage.getItem('refresh_token');
+        
+        document.getElementById('result').innerHTML = `
+            <h2>LocalStorage Status:</h2>
+            <p><strong>access_token:</strong> ${token ? 'EXISTS (' + token.substring(0, 30) + '...)' : 'NOT FOUND'}</p>
+            <p><strong>refresh_token:</strong> ${refreshToken ? 'EXISTS' : 'NOT FOUND'}</p>
+            
+            <h2>Instructions:</h2>
+            <ol>
+                <li>If tokens are missing, you need to login first</li>
+                <li>Go to: <a href="http://localhost:3000/auth/login">http://localhost:3000/auth/login</a></li>
+                <li>Login with: <strong>username: attending</strong>, <strong>password: password123</strong></li>
+                <li>Then go back to patients page</li>
+            </ol>
+        `;
+    </script>
+</body>
+</html>

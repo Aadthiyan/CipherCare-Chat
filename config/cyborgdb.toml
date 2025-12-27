@@ -1,0 +1,6 @@
+[cyborgdb]
+collection_name = "patient_embeddings"
+dimension = 768
+metric = "cosine"
+batch_size = 100
+metadata_fields = ["patient_id", "document_type", "date"]

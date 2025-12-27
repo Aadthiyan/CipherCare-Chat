@@ -1,0 +1,89 @@
+# Prometheus Alert Rules for CipherCare
+# ========================================
+
+groups:
+  - name: ciphercare-alerts
+    interval: 30s
+    rules:
+      # Latency alerts
+      - alert: HighQueryLatency
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{endpoint="/query"}[5m])) > 5.0
+        for: 5m
+        annotations:
+          summary: "High query latency detected"
+          description: "Query p95 latency is {{ $value }}s (threshold: 5s)"
+
+      - alert: VeryHighQueryLatency
+        expr: histogram_quantile(0.99, rate(http_request_duration_seconds_bucket{endpoint="/query"}[5m])) > 7.0
+        for: 2m
+        annotations:
+          summary: "Very high query latency detected"
+          description: "Query p99 latency is {{ $value }}s (threshold: 7s)"
+
+      # Error rate alerts
+      - alert: HighErrorRate
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) > 0.01
+        for: 5m
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 1%)"
+
+      - alert: VeryHighErrorRate
+        expr: (rate(http_requests_total{status=~"5.."}[5m]) / rate(http_requests_total[5m])) > 0.02
+        for: 2m
+        annotations:
+          summary: "Very high error rate detected"
+          description: "Error rate is {{ $value | humanizePercentage }} (threshold: 2%)"
+
+      # Resource utilization alerts
+      - alert: HighCPUUsage
+        expr: (100 - (avg by (instance) (irate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)) > 80
+        for: 5m
+        annotations:
+          summary: "High CPU usage detected"
+          description: "CPU usage is {{ $value | humanize }}% (threshold: 80%)"
+
+      - alert: HighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100 > 80
+        for: 5m
+        annotations:
+          summary: "High memory usage detected"
+          description: "Memory usage is {{ $value | humanize }}% (threshold: 80%)"
+
+      # Component-specific alerts
+      - alert: EmbeddingGenerationSlow
+        expr: histogram_quantile(0.95, rate(embedding_generation_duration_seconds_bucket[5m])) > 0.2
+        for: 5m
+        annotations:
+          summary: "Embedding generation is slow"
+          description: "Embedding p95 latency is {{ $value }}s (threshold: 0.2s)"
+
+      - alert: SearchLatencySlow
+        expr: histogram_quantile(0.95, rate(search_duration_seconds_bucket[5m])) > 0.5
+        for: 5m
+        annotations:
+          summary: "Search latency is high"
+          description: "Search p95 latency is {{ $value }}s (threshold: 0.5s)"
+
+      - alert: LLMInferenceTimeout
+        expr: histogram_quantile(0.99, rate(llm_inference_duration_seconds_bucket[5m])) > 5.0
+        for: 2m
+        annotations:
+          summary: "LLM inference exceeds threshold"
+          description: "LLM p99 latency is {{ $value }}s (threshold: 5s)"
+
+      # Uptime alert
+      - alert: ServiceDown
+        expr: up{job=~"ciphercare-.*"} == 0
+        for: 1m
+        annotations:
+          summary: "Service is down"
+          description: "{{ $labels.job }} is down"
+
+      # Throughput alert (low throughput = bottleneck)
+      - alert: LowThroughput
+        expr: rate(http_requests_total{endpoint="/query"}[5m]) < 1
+        for: 10m
+        annotations:
+          summary: "Low query throughput detected"
+          description: "Query throughput is {{ $value | humanize }} requests/sec (expected: ≥10 concurrent)"

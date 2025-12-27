@@ -1,0 +1,27 @@
+# Lightweight requirements for Render Free Tier
+# Removed: spacy, prefect, cyborgdb, torch-heavy models
+
+fastapi
+uvicorn
+python-dotenv
+psycopg2-binary
+sqlalchemy
+pydantic
+faker
+fhir.resources
+presidio-analyzer
+presidio-anonymizer
+# spacy  # REMOVED - 250MB, causes memory issues
+# prefect  # REMOVED - Not needed on free tier
+# cyborgdb  # REMOVED - Replaced with Pinecone
+# torch  # REMOVED - Heavy dependency
+transformers
+sentence-transformers
+numpy
+cryptography
+minio
+python-jose[cryptography]
+passlib[bcrypt]
+slowapi
+python-multipart
+pinecone  # NEW - Free vector database (updated package name)
