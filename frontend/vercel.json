@@ -3,11 +3,5 @@
   "env": {
     "NODE_OPTIONS": "--max-old-space-size=8192"
   },
-  "regions": ["iad1"],
-  "functions": {
-    "api/**/*.ts": {
-      "memory": 2048,
-      "maxDuration": 60
-    }
-  }
+  "regions": ["iad1"]
 }
