@@ -1,0 +1,40 @@
+# Core FastAPI dependencies
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+python-dotenv>=1.0.0
+python-multipart>=0.0.6
+
+# Database
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.23
+
+# Data validation
+pydantic>=2.5.0
+email-validator>=2.0.0
+
+# Authentication & Security
+bcrypt>=4.0.1
+PyJWT>=2.8.0
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+pyotp>=2.9.0
+
+# Rate limiting
+slowapi>=0.1.9
+
+# CyborgDB
+cyborgdb>=0.1.0
+
+# Utilities
+requests>=2.31.0
+cryptography>=41.0.0
+
+# REMOVED for memory constraints on free tier:
+# - sentence-transformers (requires 500MB+ RAM)
+# - transformers (requires 300MB+ RAM)
+# - torch (requires 200MB+ RAM)
+# - groq (optional, can add back if needed)
+# - sib-api-v3-sdk (email service, optional)
+
+# Note: This minimal version will allow the API to start
+# but vector search features will need to be disabled or mocked
