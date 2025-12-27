@@ -58,16 +58,23 @@ See https://nextjs.org/blog/CVE-2025-66478
 ✅ All fixes have been committed and pushed to GitHub
 ✅ Vercel will automatically detect the changes and trigger a new build
 
-### Commits:
-1. **198ec88** - "Fix Vercel build errors: TypeScript, ESLint, and Next.js config issues"
-   - Fixed patient record detail page TypeScript error
-   - Fixed ESLint configuration
-   - Fixed Next.js config
-   - Upgraded Next.js to 16.0.10
+### Commits Applied:
 
-2. **b4ea218** - "Fix TypeScript error in patient records list page"
-   - Fixed the same TypeScript error in the patient records list page
-   - Removed unnecessary `axiosInstance` check
+**1. Commit 198ec88** - "Fix Vercel build errors: TypeScript, ESLint, and Next.js config issues"
+   - Fixed patient record detail page (`[id]/page.tsx`) TypeScript error
+   - Fixed ESLint configuration imports (added `.js` extensions)
+   - Removed invalid `reactCompiler` option from Next.js config
+   - Upgraded Next.js from `15.1.3` to `16.0.10` (security fix)
+   - Upgraded `eslint-config-next` to `16.0.10`
+
+**2. Commit b4ea218** - "Fix TypeScript error in patient records list page"
+   - Fixed the same `axiosInstance` TypeScript error in `page.tsx`
+   - Removed unnecessary conditional check for always-defined function
+
+**3. Commit 02bedda** - "Fix TypeScript optional property errors in patient records"
+   - Added optional chaining for `patient.condition` in search filter
+   - Added fallback value for `patient.riskLevel` display
+   - Ensures type safety for potentially undefined properties
 
 ## Next Steps
 
