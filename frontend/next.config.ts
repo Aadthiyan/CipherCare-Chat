@@ -12,12 +12,6 @@ const nextConfig: NextConfig = {
   // Disable source maps in production to save memory
   productionBrowserSourceMaps: false,
 
-  // Optimize build performance
-  swcMinify: true,
-
-  // Disable static optimization that causes memory issues
-  staticPageGenerationTimeout: 60,
-
   // Enable incremental static regeneration to reduce memory
   onDemandEntries: {
     maxInactiveAge: 15 * 60 * 1000,
