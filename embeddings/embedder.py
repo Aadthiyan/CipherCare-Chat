@@ -1,34 +1,39 @@
 import os
 import logging
-import requests
+import time
 from typing import List
 import numpy as np
+from huggingface_hub import InferenceClient
 
 # Configure Logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
-class ClinicalEmbedder:
+
+class EmbeddingService:
     """
-    Clinical Embedder using Hugging Face Inference API
-    This version uses HF's API instead of loading models locally,
-    making it suitable for deployment on low-memory environments (Render free tier)
+    Embedding Service using Hugging Face Inference API
+    Supports both remote API (low-memory) and future local model loading
+    
+    Configuration via environment variables:
+        HUGGINGFACE_API_KEY: API key for HF Inference API
+        HUGGINGFACE_MODEL_NAME: Model identifier (default: sentence-transformers/all-mpnet-base-v2)
+        EMBEDDING_DIMENSION: Output dimension (default: 768)
     """
     
-    def __init__(self, model_name="sentence-transformers/all-mpnet-base-v2", max_length=512, device="cpu"):
+    def __init__(self, model_name: str = None, embedding_dim: int = None):
         """
-        Initialize Clinical Embedder with Hugging Face Inference API
+        Initialize Embedding Service with configuration from environment or parameters
         
         Args:
-            model_name: HuggingFace model to use
-            max_length: Maximum token length (not used for API but kept for compatibility)
-            device: Not used for API but kept for compatibility
+            model_name: HuggingFace model to use (overrides HUGGINGFACE_MODEL_NAME env var)
+            embedding_dim: Output embedding dimension (overrides EMBEDDING_DIMENSION env var)
         """
-        self.max_length = max_length
-        self.model_name = model_name
-        self.embedding_dim = 768  # all-mpnet-base-v2 produces 768-dim embeddings
+        # Get configuration from environment with sensible defaults
+        self.model_name = model_name or os.getenv("HUGGINGFACE_MODEL_NAME", "sentence-transformers/all-mpnet-base-v2")
+        self.embedding_dim = embedding_dim or int(os.getenv("EMBEDDING_DIMENSION", "768"))
         
-        # Get API key from environment
+        # Get API key
         self.api_key = os.getenv("HUGGINGFACE_API_KEY")
         if not self.api_key:
             raise ValueError(
@@ -36,116 +41,111 @@ class ClinicalEmbedder:
                 "Please set it in your .env file or Render environment variables."
             )
         
-        # Hugging Face Inference API endpoint - use /models/ path for text embeddings
-        # This endpoint works with feature-extraction models
-        self.api_url = f"https://api-inference.huggingface.co/models/{model_name}"
-        self.headers = {"Authorization": f"Bearer {self.api_key}"}
+        # Initialize HF Inference Client
+        self.client = InferenceClient(api_key=self.api_key, timeout=30)
         
-        logger.info(f"✓ Initialized HF Inference API embedder: {model_name} (dim: {self.embedding_dim})")
-        logger.info("  Using Hugging Face API - no local model loading required")
-        
+        logger.info(f"✓ Initialized HF Inference API embedder")
+        logger.info(f"  Model: {self.model_name}")
+        logger.info(f"  Dimension: {self.embedding_dim}")
+        logger.info(f"  Mode: Remote Inference API (low-memory)")
+    
     def get_embedding(self, text: str) -> List[float]:
         """
-        Generates embedding for a single text string using HF Inference API.
+        Generate embedding for a single text string using HF Inference API
         
         Args:
             text: Input text to embed
             
         Returns:
-            768-dimensional embedding vector as list of floats
+            Embedding vector as list of floats (768-dimensional by default)
+            
+        Raises:
+            ValueError: If text is empty
+            Exception: If embedding generation fails
         """
         if not text or not text.strip():
             logger.warning("Empty text provided, returning zero vector")
             return [0.0] * self.embedding_dim
         
         # Truncate text if too long (API has limits)
-        if len(text) > 5000:  # Conservative limit
+        if len(text) > 5000:
             text = text[:5000]
-            logger.debug(f"Truncated text to 5000 characters")
+            logger.debug("Truncated text to 5000 characters")
         
         try:
-            # Call Hugging Face Inference API
-            response = requests.post(
-                self.api_url,
-                headers=self.headers,
-                json={"inputs": text, "options": {"wait_for_model": True}},
-                timeout=30  # 30 second timeout
+            # Call HF Inference API using official client
+            # feature_extraction() returns embeddings for the input text
+            result = self.client.feature_extraction(
+                text=text,
+                model=self.model_name
             )
             
-            if response.status_code == 200:
-                # API returns embeddings as nested list
-                result = response.json()
-                
-                # Handle different response formats
-                if isinstance(result, list):
-                    if isinstance(result[0], list):
-                        # Mean pooling over token embeddings
-                        embedding = np.mean(result, axis=0)
-                    else:
-                        # Already pooled
-                        embedding = np.array(result)
+            # Handle different response formats
+            # The API returns a list of embeddings (one per token or pooled)
+            if isinstance(result, list) and len(result) > 0:
+                # If result is list of lists (token embeddings), apply mean pooling
+                if isinstance(result[0], (list, np.ndarray)):
+                    embedding = np.mean(result, axis=0)
                 else:
-                    raise ValueError(f"Unexpected response format: {type(result)}")
+                    embedding = np.array(result)
+            elif isinstance(result, (np.ndarray, list)):
+                # Already a vector
+                embedding = np.array(result)
+            else:
+                logger.warning("Empty or unexpected embedding result, returning zero vector")
+                return [0.0] * self.embedding_dim
+            
+            # Normalize for cosine similarity
+            norm = np.linalg.norm(embedding)
+            if norm > 0:
+                embedding = embedding / norm
+            
+            return embedding.tolist()
                 
-                # Normalize (L2 normalization for cosine similarity)
-                norm = np.linalg.norm(embedding)
-                if norm > 0:
-                    embedding = embedding / norm
-                
-                return embedding.tolist()
-                
-            elif response.status_code == 503:
-                # Model is loading, wait and retry once
-                logger.warning("Model is loading on HF servers, waiting 20s and retrying...")
-                import time
+        except Exception as e:
+            error_msg = str(e)
+            
+            # Check for specific HF API errors
+            if "410" in error_msg or "no longer supported" in error_msg:
+                logger.error(f"HF API endpoint error (410): {error_msg}")
+                logger.info("Using correct endpoint via InferenceClient")
+            elif "503" in error_msg or "loading" in error_msg.lower():
+                logger.warning(f"Model loading on HF servers, will retry: {error_msg}")
+                # Wait and retry once
                 time.sleep(20)
-                
-                response = requests.post(
-                    self.api_url,
-                    headers=self.headers,
-                    json={"inputs": text, "options": {"wait_for_model": True}},
-                    timeout=30
-                )
-                
-                if response.status_code == 200:
-                    result = response.json()
-                    if isinstance(result, list):
-                        if isinstance(result[0], list):
+                try:
+                    result = self.client.feature_extraction(
+                        text=text,
+                        model=self.model_name
+                    )
+                    if isinstance(result, list) and len(result) > 0:
+                        if isinstance(result[0], (list, np.ndarray)):
                             embedding = np.mean(result, axis=0)
                         else:
                             embedding = np.array(result)
                     else:
-                        raise ValueError(f"Unexpected response format: {type(result)}")
-                    
+                        embedding = np.array(result)
                     norm = np.linalg.norm(embedding)
                     if norm > 0:
                         embedding = embedding / norm
-                    
                     return embedding.tolist()
-                else:
-                    raise Exception(f"HF API error after retry: {response.status_code} - {response.text}")
-                    
-            else:
-                raise Exception(f"HF API error: {response.status_code} - {response.text}")
-                
-        except requests.exceptions.Timeout:
-            logger.error("HF API request timed out after 30 seconds")
-            raise Exception("Embedding request timed out. Please try again.")
+                except Exception as retry_error:
+                    logger.error(f"Retry failed: {retry_error}")
+                    raise
             
-        except Exception as e:
-            logger.error(f"Error getting embedding from HF API: {e}")
-            raise Exception(f"Failed to generate embedding: {str(e)}")
+            logger.error(f"Embedding generation failed: {error_msg}")
+            raise Exception(f"Failed to generate embedding: {error_msg}")
     
     def get_embeddings_batch(self, texts: List[str]) -> List[List[float]]:
         """
-        Generate embeddings for multiple texts.
-        Note: Calls API sequentially to avoid rate limits.
+        Generate embeddings for multiple texts in batch
+        Calls API sequentially to avoid rate limits
         
         Args:
             texts: List of texts to embed
             
         Returns:
-            List of 768-dimensional embedding vectors
+            List of embedding vectors
         """
         embeddings = []
         for i, text in enumerate(texts):
@@ -160,4 +160,25 @@ class ClinicalEmbedder:
                 # Return zero vector on failure
                 embeddings.append([0.0] * self.embedding_dim)
         
+        logger.info(f"✓ Generated {len(embeddings)} embeddings (dim: {self.embedding_dim})")
         return embeddings
+
+
+class ClinicalEmbedder(EmbeddingService):
+    """
+    Backwards-compatible wrapper for existing code using ClinicalEmbedder
+    Inherits all functionality from EmbeddingService
+    """
+    
+    def __init__(self, model_name="sentence-transformers/all-mpnet-base-v2", max_length=512, device="cpu"):
+        """
+        Initialize Clinical Embedder (legacy interface)
+        
+        Args:
+            model_name: HuggingFace model to use
+            max_length: Maximum token length (kept for compatibility, not used)
+            device: Device to use (kept for compatibility, not used)
+        """
+        super().__init__(model_name=model_name, embedding_dim=768)
+        self.max_length = max_length
+        self.device = device

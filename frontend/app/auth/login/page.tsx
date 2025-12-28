@@ -113,7 +113,7 @@ export default function LoginPage() {
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="attending or resident"
+                    placeholder="username"
                     className="w-full glass-card border border-blue-500/20 rounded-lg pl-10 pr-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-400/50 focus:border-blue-400 transition"
                     disabled={loading}
                   />
