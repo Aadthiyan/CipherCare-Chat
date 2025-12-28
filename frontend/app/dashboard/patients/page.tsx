@@ -61,7 +61,8 @@ export default function PatientsPage() {
                 }
 
                 console.log('📡 Fetching patients from API...');
-                const response = await fetch('http://localhost:8000/api/v1/patients?limit=500', {
+                const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+                const response = await fetch(`${backendUrl}/api/v1/patients?limit=500`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
