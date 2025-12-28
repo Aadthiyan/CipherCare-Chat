@@ -94,14 +94,15 @@ async def startup_event():
     try:
         # Initialize PostgreSQL connection pool for authentication
         from backend.database import init_db_pool
-        if not init_db_pool():
+        # Use smaller pool size for Render's connection limits
+        if not init_db_pool(min_conn=2, max_conn=10):
             raise ServiceInitializationError(
                 "PostgreSQL",
                 "Failed to initialize database connection pool",
                 details={"check": "DATABASE_URL in .env"}
             )
         service_status["postgres"] = "✓"
-        logger.info("PostgreSQL connection pool initialized")
+        logger.info("PostgreSQL connection pool initialized (2-10 connections)")
         
         # Load Embedder (768-dim model for maximum quality)
         embedding_model = os.getenv("EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2")

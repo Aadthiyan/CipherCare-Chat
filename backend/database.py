@@ -103,6 +103,17 @@ def get_db_connection():
         try:
             conn = pool.getconn()
             logger.debug(f"Got connection from pool")
+            
+            # Validate connection is still alive
+            try:
+                with conn.cursor() as cur:
+                    cur.execute("SELECT 1")
+                conn.commit()
+            except Exception as e:
+                logger.warning(f"Connection validation failed, getting fresh connection: {e}")
+                pool.putconn(conn, close=True)  # Close the bad connection
+                conn = pool.getconn()
+                
         except Exception as e:
             logger.error(f"Failed to get connection from pool: {e}")
             raise
