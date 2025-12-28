@@ -12,7 +12,7 @@ from datetime import datetime
 logger = logging.getLogger(__name__)
 
 # Brevo API configuration
-BREVO_API_KEY = os.getenv("BREVO_API_KEY")
+BREVO_API_KEY = os.getenv("BREVO_API_KEY", "").strip()  # Strip whitespace and newlines
 BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 SENDER_EMAIL = os.getenv("SENDER_EMAIL", "noreply@cipercare.com")
 SENDER_NAME = os.getenv("SENDER_NAME", "CipherCare")
