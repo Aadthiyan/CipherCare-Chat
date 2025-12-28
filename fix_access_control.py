@@ -39,14 +39,14 @@ def get_user_info():
         user_id, username, email, role, full_name = user
         print(f"\n📋 User: {full_name} (@{username})")
         print(f"   Email: {email}")
-        print(f"   Roles: {roles}")
+        print(f"   Role: {role}")
         print(f"   ID: {user_id}")
         
         # Check if user has permissions
-        if roles and ('admin' in roles or 'attending' in roles):
+        if role and (role == 'admin' or role == 'attending'):
             print(f"\n✅ User has admin/attending role - can access ALL patients")
         else:
-            print(f"\n⚠️  User has limited roles - can only access assigned patients")
+            print(f"\n⚠️  User has limited role - can only access assigned patients")
         
         cursor.close()
         conn.close()

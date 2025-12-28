@@ -171,14 +171,16 @@ export default function RecordsPage() {
             }
         };
 
-        fetchPatients();
+        if (axiosInstance) {
+            fetchPatients();
+        }
     }, [axiosInstance]);
 
     const filteredRecords = patientRecords.filter(patient => {
         const matchesSearch =
             patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             patient.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            (patient.condition?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+            (patient.condition && patient.condition.toLowerCase().includes(searchTerm.toLowerCase()));
 
         const matchesCategory = selectedCategory === 'All Categories' ||
             (patient.recentRecords && patient.recentRecords.some(record => record.category === selectedCategory));
@@ -186,7 +188,7 @@ export default function RecordsPage() {
         return matchesSearch && matchesCategory;
     });
 
-    const getRiskColor = (level: string) => {
+    const getRiskColor = (level: string | undefined) => {
         switch (level) {
             case 'High': return 'bg-red-500/20 text-red-400 border-red-500/30';
             case 'Medium': return 'bg-amber-500/20 text-amber-400 border-amber-500/30';
@@ -330,8 +332,8 @@ export default function RecordsPage() {
                                                 {patient.name}
                                             </h3>
                                             <span className="text-sm text-slate-500 font-mono">#{patient.id}</span>
-                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getRiskColor(patient.riskLevel || 'Low')}`}>
-                                                {patient.riskLevel || 'Low'} Risk
+                                            <span className={`px-2 py-0.5 rounded-full text-xs font-semibold border ${getRiskColor(patient.riskLevel)}`}>
+                                                {patient.riskLevel} Risk
                                             </span>
                                         </div>
 
