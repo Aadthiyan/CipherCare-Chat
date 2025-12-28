@@ -2,11 +2,22 @@
 """Delete all users from the database"""
 
 import os
+import sys
+from pathlib import Path
 from dotenv import load_dotenv
 import psycopg2
 
-load_dotenv()
+# Load .env from project root
+env_path = Path(__file__).parent / ".env"
+load_dotenv(env_path)
+
 DATABASE_URL = os.getenv("DATABASE_URL")
+
+if not DATABASE_URL:
+    print("❌ Error: DATABASE_URL not found in .env file")
+    sys.exit(1)
+
+print(f"📝 Using DATABASE_URL: {DATABASE_URL[:50]}...")
 
 try:
     conn = psycopg2.connect(DATABASE_URL)
@@ -28,3 +39,4 @@ try:
     
 except Exception as e:
     print(f"❌ Error: {e}")
+    sys.exit(1)

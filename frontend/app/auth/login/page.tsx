@@ -12,8 +12,8 @@ import { useAuth } from '@/lib/auth-context';
 export default function LoginPage() {
   const router = useRouter();
   const { login } = useAuth();
-  const [username, setUsername] = useState('jsmith');
-  const [password, setPassword] = useState('Aadhithiyan@99');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -137,7 +137,7 @@ export default function LoginPage() {
                     disabled={loading}
                   />
                 </div>
-                <p className="text-xs text-slate-500 mt-1">Demo: password123</p>
+                <p className="text-xs text-slate-500 mt-1"></p>
               </div>
 
               {/* Remember Me */}
@@ -204,9 +204,8 @@ export default function LoginPage() {
           {/* Info Card */}
           <div className="mt-6 p-4 glass-card border border-blue-500/10 rounded-lg">
             <p className="text-xs text-slate-400 text-center">
-              <strong className="text-blue-300">Demo Credentials:</strong><br />
-              Attending: attending / password123<br />
-              Resident: resident / password123
+              <strong className="text-blue-300"></strong><br />
+              <br />
             </p>
           </div>
         </div>
