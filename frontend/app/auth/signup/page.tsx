@@ -66,7 +66,8 @@ export default function SignupPage() {
     setLoading(true);
 
     try {
-      const response = await axios.post('http://127.0.0.1:8000/auth/signup', {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+      const response = await axios.post(`${backendUrl}/auth/signup`, {
         username: formData.username,
         email: formData.email,
         password: formData.password,

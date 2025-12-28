@@ -25,8 +25,9 @@ export default function VerifyEmailContent() {
             setStatus('loading');
             setMessage('Verifying your email...');
 
+            const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
             const response = await axios.post(
-                'http://127.0.0.1:8000/auth/verify-email',
+                `${backendUrl}/auth/verify-email`,
                 { token: verificationToken },
                 {
                     params: { token: verificationToken }
