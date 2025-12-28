@@ -126,7 +126,7 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-400">
                                     <Calendar className="w-4 h-4" />
-                                    <span>DOB: {patient.dob ? new Date(patient.dob).toLocaleDateString() : 'N/A'}</span>
+                                    <span>DOB: {patient.dob || 'N/A'}</span>
                                 </div>
                                 <div className="flex items-center gap-2 text-slate-400">
                                     <FileText className="w-4 h-4" />
@@ -241,13 +241,11 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
                                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                     {patient.vitals.slice(0, 6).map((vital: any, idx: number) => (
                                         <div key={idx} className="bg-slate-900/50 border border-blue-500/10 rounded-lg p-4">
-                                            <p className="text-xs text-slate-400 mb-2">{vital.label}</p>
+                                            <p className="text-xs text-slate-400 mb-2">{vital.type}</p>
                                             <p className="text-xl font-bold text-white mb-1">
                                                 {vital.value} <span className="text-sm text-slate-500 font-normal">{vital.unit}</span>
                                             </p>
-                                            <span className={`inline-block px-2 py-0.5 rounded text-xs font-medium border ${getVitalStatus(vital.status)}`}>
-                                                {vital.status}
-                                            </span>
+                                            <span className="text-xs text-slate-500">{vital.date ? new Date(vital.date).toLocaleDateString() : ''}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -264,15 +262,12 @@ export default function PatientRecordPage({ params }: { params: Promise<{ id: st
                                 {patient.vitals.map((vital: any, idx: number) => (
                                     <div key={idx} className="bg-slate-900/50 border border-blue-500/10 rounded-xl p-5">
                                         <div className="mb-3">
-                                            <p className="text-sm text-slate-400">{vital.label}</p>
-                                            <p className="text-xs text-slate-600">{vital.lastUpdated ? new Date(vital.lastUpdated).toLocaleString() : 'N/A'}</p>
+                                            <p className="text-sm text-slate-400">{vital.type}</p>
+                                            <p className="text-xs text-slate-600">{vital.date ? new Date(vital.date).toLocaleString() : 'N/A'}</p>
                                         </div>
                                         <p className="text-3xl font-bold text-white mb-2">
                                             {vital.value} <span className="text-lg text-slate-500 font-normal">{vital.unit}</span>
                                         </p>
-                                        <span className={`inline-block px-3 py-1 rounded-lg text-sm font-medium border ${getVitalStatus(vital.status)}`}>
-                                            {vital.status}
-                                        </span>
                                     </div>
                                 ))}
                             </div>
