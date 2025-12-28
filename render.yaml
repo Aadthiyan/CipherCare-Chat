@@ -1,46 +1,49 @@
 services:
+  # CyborgDB Service
   - type: web
-    name: cyborgdb
+    name: ciphercare-cyborgdb
     env: docker
     dockerfilePath: ./docker/cyborgdb.Dockerfile
+    dockerContext: .
     plan: starter
-    region: oregon
+    healthCheckPath: /health
     disk:
       name: cyborgdb-data
       mountPath: /data
-      sizeGB: 10
+      sizeGB: 1
     envVars:
-      - key: CYBORGDB_PORT
-        value: "8002"
-      - key: CYBORGDB_HOST
-        value: "0.0.0.0"
-    healthCheckPath: /health
-    port: 8002
+      - key: CYBORGDB_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: CYBORGDB_DATA_DIR
+        value: /data
 
+  # Backend Service
   - type: web
-    name: backend
+    name: ciphercare-backend
     env: docker
     dockerfilePath: ./docker/backend.Dockerfile
+    dockerContext: .
     plan: starter
-    region: oregon
-    envVars:
-      - key: DATABASE_URL
-        value: ${DATABASE_URL}
-      - key: CYBORGDB_API_KEY
-        value: ${CYBORGDB_API_KEY}
-      - key: CYBORGDB_BASE_URL
-        value: http://cyborgdb:8002
-      - key: HUGGINGFACE_API_KEY
-        value: ${HUGGINGFACE_API_KEY}
-      - key: HUGGINGFACE_MODEL_NAME
-        value: ${HUGGINGFACE_MODEL_NAME}
-      - key: EMBEDDING_DIMENSION
-        value: ${EMBEDDING_DIMENSION}
     healthCheckPath: /health
-    port: 8000
-
-# Notes:
-# - This config deploys both CyborgDB and the backend as Docker services on Render.
-# - The backend is configured to use the internal service name `http://cyborgdb:8002` so
-#   both services run in the same Render project network and can resolve each other by name.
-
+    envVars:
+      # Point to internal CyborgDB service (format: http://service-name:port)
+      - key: CYBORGDB_BASE_URL
+        value: http://ciphercare-cyborgdb:8002
+      - key: CYBORGDB_API_KEY
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: HF_API_TOKEN
+        sync: false
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: POSTGRES_URL
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
