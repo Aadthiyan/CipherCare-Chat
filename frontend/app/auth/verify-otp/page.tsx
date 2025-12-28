@@ -186,7 +186,6 @@ export default function VerifyOTPPage() {
                                     onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ''))}
                                     placeholder="000000"
                                     className="w-full px-4 py-3 bg-slate-800 border border-slate-700 rounded-lg text-center text-2xl tracking-widest font-mono text-white placeholder-slate-600 focus:outline-none focus:border-blue-500 transition-colors"
-                                    disabled={status === 'verifying'}
                                     autoFocus
                                 />
                             </div>
