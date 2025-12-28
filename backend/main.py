@@ -949,6 +949,121 @@ async def get_patients(
         }
 
 
+@app.get("/api/v1/patients/{patient_id}/details")
+async def get_patient_details(
+    patient_id: str,
+    current_user: TokenDataEnhanced = Depends(get_current_user_enhanced)
+):
+    """
+    Get detailed information for a specific patient
+    
+    Args:
+        patient_id: The ID of the patient (e.g., PID-107)
+        current_user: Authenticated user
+    
+    Returns:
+        Detailed patient information
+    """
+    try:
+        logger.info(f"User {current_user.username} requested details for patient {patient_id}")
+        
+        import json
+        from pathlib import Path
+        
+        patient_file = Path("synthea_patients_221.json")
+        
+        if not patient_file.exists():
+            raise HTTPException(status_code=404, detail=f"Patient {patient_id} not found")
+        
+        with open(patient_file, 'r') as f:
+            data = json.load(f)
+        
+        # Find patient by ID
+        patient_data = data.get(patient_id)
+        
+        if not patient_data:
+            raise HTTPException(status_code=404, detail=f"Patient {patient_id} not found")
+        
+        # Build detailed patient record
+        from datetime import datetime
+        
+        demo = patient_data.get("resource", {}).get("contact", {}).get("telecom", {})
+        demographics = patient_data.get("resource", {})
+        
+        # Get birth date
+        birth_date = patient_data.get("birthDate", "Unknown")
+        age = None
+        if birth_date and birth_date != "Unknown":
+            try:
+                birth_year = int(birth_date.split("-")[0])
+                age = datetime.now().year - birth_year
+            except:
+                pass
+        
+        # Get conditions
+        conditions = patient_data.get("conditions", [])
+        medications = patient_data.get("medications", [])
+        procedures = patient_data.get("procedures", [])
+        observations = patient_data.get("observations", [])
+        
+        # Build detailed response
+        patient_details = {
+            "id": patient_id,
+            "name": patient_data.get("name", f"Patient {patient_id}"),
+            "age": age,
+            "gender": patient_data.get("gender", "Unknown"),
+            "dob": birth_date,
+            "mrn": patient_id,
+            "primaryCondition": conditions[0].get("display", "Not specified") if conditions else "Not specified",
+            "conditions": [
+                {
+                    "name": c.get("display", "Unknown"),
+                    "code": c.get("code", ""),
+                    "status": "Active"
+                }
+                for c in conditions[:5]  # Limit to 5
+            ],
+            "medications": [
+                {
+                    "name": m.get("display", "Unknown"),
+                    "dosage": m.get("dosage", "Not specified"),
+                    "frequency": m.get("frequency", "Not specified")
+                }
+                for m in medications[:10]  # Limit to 10
+            ],
+            "procedures": [
+                {
+                    "name": p.get("display", "Unknown"),
+                    "date": p.get("date", ""),
+                    "code": p.get("code", "")
+                }
+                for p in procedures[:5]  # Limit to 5
+            ],
+            "vitals": [
+                {
+                    "type": o.get("type", "Unknown"),
+                    "value": o.get("value", ""),
+                    "unit": o.get("unit", ""),
+                    "date": o.get("date", "")
+                }
+                for o in observations[:10]  # Limit to 10
+            ],
+            "riskLevel": "Medium",
+            "pcp": "Not assigned",
+            "phone": patient_data.get("phone", "N/A"),
+            "email": patient_data.get("email", "N/A"),
+            "address": patient_data.get("address", "Not specified")
+        }
+        
+        return patient_details
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error fetching patient details for {patient_id}: {str(e)}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error. Check logs for details.")
+
+
 if __name__ == "__main__":
     import uvicorn
     # Generate self-signed certs for local Dev if needed, or run HTTP for now behind reverse proxy

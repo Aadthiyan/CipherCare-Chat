@@ -36,8 +36,8 @@ class ClinicalEmbedder:
                 "Please set it in your .env file or Render environment variables."
             )
         
-        # Hugging Face Inference API endpoint
-        self.api_url = f"https://api-inference.huggingface.co/pipeline/feature-extraction/{model_name}"
+        # Hugging Face Inference API endpoint (updated to use router.huggingface.co)
+        self.api_url = f"https://api-inference.huggingface.co/models/{model_name}"
         self.headers = {"Authorization": f"Bearer {self.api_key}"}
         
         logger.info(f"✓ Initialized HF Inference API embedder: {model_name} (dim: {self.embedding_dim})")
