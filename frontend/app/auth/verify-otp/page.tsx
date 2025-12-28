@@ -191,7 +191,7 @@ export default function VerifyOTPPage() {
                             </div>
                             <button
                                 type="submit"
-                                disabled={status === 'verifying' || otp.length !== 6}
+                                disabled={otp.length !== 6}
                                 className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-slate-700 text-white font-semibold py-3 rounded-lg transition-colors flex items-center justify-center gap-2"
                             >
                                 {status === 'verifying' ? (
