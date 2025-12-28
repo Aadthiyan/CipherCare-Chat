@@ -187,18 +187,13 @@ app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # 5. Middleware
-# CORS - Support both local development and Vercel deployment
-frontend_url = os.getenv("FRONTEND_URL", "http://localhost:3000")
+# CORS
 origins = [
-    "http://localhost:3000",  # Local Next.js development
+    "http://localhost:3000",  # Next.js local
     "http://localhost:8000",  # Local backend
-    frontend_url,  # Production frontend URL (Vercel)
+    "https://cipher-care.vercel.app",  # Vercel production
+    "https://ciphercare-chat.vercel.app",  # Vercel production (alternative)
 ]
-
-# Allow all Vercel preview deployments
-if "vercel.app" in frontend_url:
-    origins.append("https://*.vercel.app")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
