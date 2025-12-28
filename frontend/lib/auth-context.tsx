@@ -155,7 +155,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setRefreshToken(refresh_token);
       setUser(userData);
     } catch (error: any) {
-      throw new Error(error.response?.data?.detail || 'Login failed');
+      // Normalize server error detail (support string/array/object)
+      const responseData = error?.response?.data;
+      let detailMessage = 'Login failed';
+      if (responseData) {
+        if (typeof responseData.detail === 'string') {
+          detailMessage = responseData.detail;
+        } else if (Array.isArray(responseData.detail)) {
+          detailMessage = responseData.detail.join(' ');
+        } else if (typeof responseData.message === 'string') {
+          detailMessage = responseData.message;
+        } else {
+          try {
+            detailMessage = JSON.stringify(responseData);
+          } catch (e) {
+            detailMessage = 'Login failed';
+          }
+        }
+      } else if (error?.message) {
+        detailMessage = error.message;
+      }
+      const errObj = new Error(detailMessage);
+      (errObj as any).status = error?.response?.status;
+      throw errObj;
     } finally {
       setIsLoading(false);
     }

@@ -203,76 +203,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mock Data for Demo/Testing
-def _get_mock_patient_data(patient_id: str):
-    """Return realistic mock patient data when CyborgDB is unavailable"""
-    mock_data = {
-        "P123": [
-            {
-                "id": "mock-1",
-                "metadata": {
-                    "condition": "Type 2 Diabetes Mellitus",
-                    "status": "active",
-                    "onset_date": "2020-03-15",
-                    "medication": "Metformin 1000mg",
-                    "last_hba1c": "7.2%",
-                    "patient_id": "P123"
-                },
-                "score": 0.95
-            },
-            {
-                "id": "mock-2",
-                "metadata": {
-                    "condition": "Essential Hypertension",
-                    "status": "active",
-                    "onset_date": "2018-06-20",
-                    "medication": "Lisinopril 10mg",
-                    "last_bp": "128/82",
-                    "patient_id": "P123"
-                },
-                "score": 0.92
-            },
-            {
-                "id": "mock-3",
-                "metadata": {
-                    "condition": "Hyperlipidemia",
-                    "status": "active",
-                    "onset_date": "2019-01-10",
-                    "medication": "Atorvastatin 20mg",
-                    "last_cholesterol": "185 mg/dL",
-                    "patient_id": "P123"
-                },
-                "score": 0.89
-            }
-        ],
-        "P456": [
-            {
-                "id": "mock-4",
-                "metadata": {
-                    "condition": "Asthma",
-                    "status": "active",
-                    "onset_date": "2015-05-12",
-                    "medication": "Albuterol inhaler",
-                    "severity": "mild",
-                    "patient_id": "P456"
-                },
-                "score": 0.94
-            },
-            {
-                "id": "mock-5",
-                "metadata": {
-                    "condition": "Allergic Rhinitis",
-                    "status": "active",
-                    "onset_date": "2018-03-22",
-                    "medication": "Cetirizine 10mg",
-                    "trigger": "seasonal",
-                    "patient_id": "P456"
-                },
-                "score": 0.91
-            }
-        ]
-    }
-    return mock_data.get(patient_id, mock_data.get("P123", []))
 
 # Request Logging Middleware
 @app.middleware("http")
@@ -721,10 +651,11 @@ async def query_patient_data(
             raise
         except Exception as e:
             logger.error(f"Search failed: {str(e)[:100]}")
-            # Fallback to mock data when CyborgDB is unavailable
-            logger.info(f"CyborgDB unavailable, using mock data for patient {query_req.patient_id}")
-            raw_results = _get_mock_patient_data(query_req.patient_id)
-            logger.info(f"Using {len(raw_results)} mock records for {query_req.patient_id}")
+            raise SearchError(
+                reason="CyborgDB search failed - database unavailable",
+                query_terms=query_req.question,
+                details={"error": str(e)[:200]}
+            )
         
         # --- Step 4: Decryption & Context Assembly ---
         source_docs = []

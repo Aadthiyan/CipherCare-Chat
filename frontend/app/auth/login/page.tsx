@@ -47,8 +47,10 @@ export default function LoginPage() {
       console.log('🚀 Redirecting to dashboard...');
       router.push('/dashboard');
     } catch (err: any) {
-      console.error('❌ Login error:', err);
-      setError(err.message || 'Login failed. Please try again.');
+      const message = err?.message || (err?.toString && err.toString()) || 'Login failed. Please try again.';
+      // Only log a concise message to avoid noisy stack traces for expected auth errors
+      console.debug('❌ Login error:', message);
+      setError(message);
       setLoading(false);
     }
   };
