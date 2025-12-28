@@ -6,18 +6,18 @@ services:
     dockerfilePath: ./docker/cyborgdb.Dockerfile
     dockerContext: .
     plan: starter
-    healthCheckPath: /health
+    healthCheckPath: /v1/health
     disk:
       name: cyborgdb-data
-      mountPath: /data
+      mountPath: /home/cyborguser/.cyborgdb
       sizeGB: 1
     envVars:
       - key: CYBORGDB_API_KEY
         sync: false
       - key: DATABASE_URL
         sync: false
-      - key: CYBORGDB_DATA_DIR
-        value: /data
+      - key: PORT
+        value: 8002
 
   # Backend Service
   - type: web
