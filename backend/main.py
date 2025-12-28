@@ -969,6 +969,7 @@ async def get_patient_details(
         
         import json
         from pathlib import Path
+        from datetime import datetime
         
         patient_file = Path("synthea_patients_221.json")
         
@@ -984,19 +985,17 @@ async def get_patient_details(
         if not patient_data:
             raise HTTPException(status_code=404, detail=f"Patient {patient_id} not found")
         
-        # Build detailed patient record
-        from datetime import datetime
-        
-        demo = patient_data.get("resource", {}).get("contact", {}).get("telecom", {})
-        demographics = patient_data.get("resource", {})
-        
-        # Get birth date
+        # Get birth date and calculate age
         birth_date = patient_data.get("birthDate", "Unknown")
         age = None
+        dob_display = "Unknown"
+        
         if birth_date and birth_date != "Unknown":
             try:
-                birth_year = int(birth_date.split("-")[0])
-                age = datetime.now().year - birth_year
+                # Parse YYYY-MM-DD format
+                birth_dt = datetime.strptime(birth_date, "%Y-%m-%d")
+                age = (datetime.now() - birth_dt).days // 365
+                dob_display = birth_dt.strftime("%B %d, %Y")
             except:
                 pass
         
@@ -1006,13 +1005,57 @@ async def get_patient_details(
         procedures = patient_data.get("procedures", [])
         observations = patient_data.get("observations", [])
         
+        # Map observation codes to human-readable labels
+        observation_labels = {
+            "8480-6": "Systolic blood pressure",
+            "8462-4": "Diastolic blood pressure",
+            "8867-4": "Heart rate",
+            "2345-7": "Glucose [Mass/volume] in Serum or Plasma",
+            "3141-9": "Body weight measured",
+            "2710-2": "Oxygen saturation",
+            "8310-5": "Body temperature",
+            "39156-5": "BMI",
+            "72514-3": "Pain severity",
+            "11884-4": "Body height",
+        }
+        
+        # Format vitals with proper labels
+        formatted_vitals = []
+        for obs in observations:
+            obs_code = obs.get("code", "")
+            obs_display = observation_labels.get(obs_code, obs.get("type", "Unknown Observation"))
+            
+            # Avoid duplicates - use code + date as unique key
+            vital_key = f"{obs_code}_{obs.get('date', '')}"
+            
+            vital = {
+                "type": obs_display,
+                "code": obs_code,
+                "value": obs.get("value", ""),
+                "unit": obs.get("unit", ""),
+                "date": obs.get("date", ""),
+                "key": vital_key
+            }
+            
+            # Avoid duplicate entries
+            if vital_key not in [v["key"] for v in formatted_vitals]:
+                formatted_vitals.append(vital)
+            
+            if len(formatted_vitals) >= 10:
+                break
+        
+        # Remove the temporary key field
+        for vital in formatted_vitals:
+            vital.pop("key", None)
+        
         # Build detailed response
         patient_details = {
             "id": patient_id,
             "name": patient_data.get("name", f"Patient {patient_id}"),
             "age": age,
             "gender": patient_data.get("gender", "Unknown"),
-            "dob": birth_date,
+            "dob": dob_display,
+            "birthDate": birth_date,
             "mrn": patient_id,
             "primaryCondition": conditions[0].get("display", "Not specified") if conditions else "Not specified",
             "conditions": [
@@ -1021,7 +1064,7 @@ async def get_patient_details(
                     "code": c.get("code", ""),
                     "status": "Active"
                 }
-                for c in conditions[:5]  # Limit to 5
+                for c in conditions[:5]
             ],
             "medications": [
                 {
@@ -1029,7 +1072,7 @@ async def get_patient_details(
                     "dosage": m.get("dosage", "Not specified"),
                     "frequency": m.get("frequency", "Not specified")
                 }
-                for m in medications[:10]  # Limit to 10
+                for m in medications[:10]
             ],
             "procedures": [
                 {
@@ -1037,17 +1080,9 @@ async def get_patient_details(
                     "date": p.get("date", ""),
                     "code": p.get("code", "")
                 }
-                for p in procedures[:5]  # Limit to 5
+                for p in procedures[:5]
             ],
-            "vitals": [
-                {
-                    "type": o.get("type", "Unknown"),
-                    "value": o.get("value", ""),
-                    "unit": o.get("unit", ""),
-                    "date": o.get("date", "")
-                }
-                for o in observations[:10]  # Limit to 10
-            ],
+            "vitals": formatted_vitals,
             "riskLevel": "Medium",
             "pcp": "Not assigned",
             "phone": patient_data.get("phone", "N/A"),
