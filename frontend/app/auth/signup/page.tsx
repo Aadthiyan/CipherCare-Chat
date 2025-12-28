@@ -3,6 +3,9 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+
+// Force dynamic rendering to avoid static generation memory issues
+export const dynamic = 'force-dynamic';
 import { Shield, Lock, User, Mail, AlertCircle, CheckCircle, Loader } from 'lucide-react';
 import axios from 'axios';
 
