@@ -171,9 +171,7 @@ export default function RecordsPage() {
             }
         };
 
-        if (axiosInstance) {
-            fetchPatients();
-        }
+        fetchPatients();
     }, [axiosInstance]);
 
     const filteredRecords = patientRecords.filter(patient => {
