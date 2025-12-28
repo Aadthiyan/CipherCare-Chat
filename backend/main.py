@@ -653,8 +653,8 @@ async def query_patient_data(
             logger.error(f"Search failed: {str(e)[:100]}")
             raise SearchError(
                 reason="CyborgDB search failed - database unavailable",
-                query_terms=query_req.question,
-                details={"error": str(e)[:200]}
+                patient_id=query_req.patient_id,
+                details={"error": str(e)[:200], "question": query_req.question[:100]}
             )
         
         # --- Step 4: Decryption & Context Assembly ---
