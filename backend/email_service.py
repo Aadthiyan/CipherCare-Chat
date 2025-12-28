@@ -57,11 +57,15 @@ class EmailService:
         }
         
         try:
-            response = requests.post(BREVO_API_URL, json=payload, headers=self.headers)
+            response = requests.post(BREVO_API_URL, json=payload, headers=self.headers, timeout=10)
             
             if response.status_code in [200, 201]:
                 logger.info(f"✓ Email sent successfully to {to_email}")
                 return True
+            elif response.status_code == 401:
+                logger.error(f"❌ Brevo API Key is invalid or disabled: {response.text}")
+                logger.warning(f"⚠️  Email failed (auth error): {to_email} - OTP not delivered")
+                return False
             else:
                 logger.error(f"Failed to send email: {response.status_code} - {response.text}")
                 return False

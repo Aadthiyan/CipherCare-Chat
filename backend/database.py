@@ -50,7 +50,11 @@ def init_db_pool(min_conn=5, max_conn=20):
             max_conn, 
             DATABASE_URL,
             # Add connection parameters
-            connect_timeout=10
+            connect_timeout=30,
+            keepalives=1,
+            keepalives_idle=30,
+            keepalives_interval=10,
+            keepalives_count=5
         )
         logger.info(f"✓ Database connection pool initialized (min={min_conn}, max={max_conn})")
         
@@ -84,7 +88,7 @@ def close_db_pool():
 
 @contextmanager
 def get_db_connection():
-    """Context manager for database connections with health check"""
+    """Context manager for database connections"""
     global pool
     conn = None
     try:
@@ -98,26 +102,7 @@ def get_db_connection():
         
         try:
             conn = pool.getconn()
-            
-            # CRITICAL FIX: Test if connection is alive before using it
-            # This prevents "SSL connection closed" errors from Neon
-            try:
-                with conn.cursor() as test_cur:
-                    test_cur.execute("SELECT 1")
-                logger.debug(f"Got healthy connection from pool")
-            except Exception as health_check_error:
-                logger.warning(f"Connection health check failed: {health_check_error}. Getting new connection...")
-                # Connection is stale, close it and get a new one
-                try:
-                    conn.close()
-                except:
-                    pass
-                conn = pool.getconn()
-                # Test the new connection
-                with conn.cursor() as test_cur:
-                    test_cur.execute("SELECT 1")
-                logger.info("Got fresh connection after health check failure")
-                
+            logger.debug(f"Got connection from pool")
         except Exception as e:
             logger.error(f"Failed to get connection from pool: {e}")
             raise
