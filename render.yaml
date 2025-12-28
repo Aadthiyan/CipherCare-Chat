@@ -16,8 +16,6 @@ services:
         sync: false
       - key: DATABASE_URL
         sync: false
-      - key: PORT
-        value: 8002
 
   # Backend Service
   - type: web
@@ -28,9 +26,9 @@ services:
     plan: starter
     healthCheckPath: /health
     envVars:
-      # Point to internal CyborgDB service (format: http://service-name:port)
+      # Point to internal CyborgDB service (Render uses port 10000 for web services)
       - key: CYBORGDB_BASE_URL
-        value: http://ciphercare-cyborgdb:8002
+        value: http://ciphercare-cyborgdb:10000
       - key: CYBORGDB_API_KEY
         sync: false
       - key: DATABASE_URL
