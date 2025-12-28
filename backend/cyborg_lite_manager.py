@@ -98,7 +98,7 @@ class CyborgLiteManager:
         return hashlib.sha256(combined.encode()).digest()
     
     @classmethod
-    def get_index(cls, index_name: str = "patient_data_FINAL") -> Any:
+    def get_index(cls, index_name: str = "patient_records_v1") -> Any:
         """Get or create an index with encryption"""
         if not cls._client:
             raise ServiceInitializationError(
@@ -173,7 +173,7 @@ class CyborgLiteManager:
                query_vec: List[float],
                k: int = 5,
                patient_id: Optional[str] = None,
-               collection: str = "patient_data_FINAL") -> List[Dict[str, Any]]:
+               collection: str = "patient_records_v1") -> List[Dict[str, Any]]:
         """
         Search for similar vectors in the embedded database with retry logic
         
