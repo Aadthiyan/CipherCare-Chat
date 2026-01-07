@@ -1,34 +1,21 @@
 services:
-  # CyborgDB Service
-  - type: web
-    name: ciphercare-cyborgdb
-    env: docker
-    dockerfilePath: ./docker/cyborgdb.Dockerfile
-    dockerContext: .
-    plan: starter
-    healthCheckPath: /v1/health
-    disk:
-      name: cyborgdb-data
-      mountPath: /home/cyborguser/.cyborgdb
-      sizeGB: 1
-    envVars:
-      - key: CYBORGDB_API_KEY
-        sync: false
-      - key: DATABASE_URL
-        sync: false
-
-  # Backend Service
+  # Combined Backend + CyborgDB Service
   - type: web
     name: ciphercare-backend
     env: docker
-    dockerfilePath: ./docker/backend.Dockerfile
+    dockerfilePath: ./docker/backend-with-cyborgdb.Dockerfile
     dockerContext: .
-    plan: starter
+    plan: starter  # Starter plan required for persistent disk
     healthCheckPath: /health
+    # Persistent disk for CyborgDB data
+    disk:
+      name: cyborgdb-data
+      mountPath: /app/cyborgdb_data
+      sizeGB: 1
     envVars:
-      # Point to internal CyborgDB service (Render uses port 10000 for web services)
+      # CyborgDB runs on localhost:8002 inside the same container
       - key: CYBORGDB_BASE_URL
-        value: http://ciphercare-cyborgdb:10000
+        value: http://localhost:8002
       - key: CYBORGDB_API_KEY
         sync: false
       - key: DATABASE_URL
@@ -36,6 +23,8 @@ services:
       - key: GROQ_API_KEY
         sync: false
       - key: HF_API_TOKEN
+        sync: false
+      - key: HUGGINGFACE_API_KEY
         sync: false
       - key: JWT_SECRET_KEY
         sync: false
@@ -45,3 +34,6 @@ services:
         sync: false
       - key: MAIL_PASSWORD
         sync: false
+      - key: FRONTEND_URL
+        sync: false
+
