@@ -29,6 +29,7 @@ cyborgdb>=0.1.0
 numpy>=1.24.0
 requests>=2.31.0
 huggingface_hub>=0.16.0
+sentence-transformers>=2.2.0  # For admin upload endpoint
 
 # Utilities
 cryptography>=41.0.0

@@ -8,7 +8,6 @@ from pydantic import BaseModel
 import json
 import os
 from typing import Optional
-from sentence_transformers import SentenceTransformer
 from backend.cyborg_lite_manager import CyborgLiteManager
 import logging
 
@@ -69,6 +68,8 @@ def upload_patient_data_task():
         upload_status["status"] = "loading_model"
         upload_status["message"] = "Loading embedding model..."
         
+        # Import here to avoid startup error if package not installed
+        from sentence_transformers import SentenceTransformer
         embedder = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
         logger.info("Embedding model loaded")
         
