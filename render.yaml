@@ -3,7 +3,7 @@ services:
   - type: web
     name: ciphercare-chat
     env: docker
-    dockerfilePath: ./docker/backend-with-cyborgdb.Dockerfile
+    dockerfilePath: ./Dockerfile
     dockerContext: .
     plan: starter  # Starter plan required for persistent disk
     healthCheckPath: /health
