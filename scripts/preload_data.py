@@ -12,7 +12,13 @@ from sentence_transformers import SentenceTransformer
 
 # Configuration
 CYBORGDB_URL = "http://localhost:8002"
-CYBORGDB_API_KEY = os.getenv("CYBORGDB_API_KEY", "cyborg_9e8c1c2e25c944d78f41ac7f23376d23")
+CYBORGDB_API_KEY = os.getenv("CYBORGDB_API_KEY")
+
+if not CYBORGDB_API_KEY:
+    print("❌ ERROR: CYBORGDB_API_KEY environment variable not set!")
+    print("This should be set in render.yaml or .env")
+    exit(1)
+
 DATA_FILE = "/app/data/synthea_structured_cipercare.json"
 INDEX_NAME = "patient_records_v1"
 LIMIT = 76317  # 150 patients
