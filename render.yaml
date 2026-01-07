@@ -1,24 +1,19 @@
 services:
-  # Combined Backend + CyborgDB Service with Persistent Disk
+  # Backend with CyborgDB Embedded (Free Tier Compatible!)
   - type: web
     name: ciphercare-chat
-    env: docker
-    dockerfilePath: ./Dockerfile
-    dockerContext: .
-    plan: starter  # Starter plan required for persistent disk
+    env: python
+    buildCommand: pip install -r requirements-render.txt.backup
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    plan: free  # Free tier works with embedded mode!
     healthCheckPath: /health
-    # Persistent disk for CyborgDB data
-    disk:
-      name: cyborgdb-data
-      mountPath: /app/cyborgdb_data
-      sizeGB: 1
     envVars:
-      # CyborgDB runs on localhost:8002 inside the same container
-      - key: CYBORGDB_BASE_URL
-        value: http://localhost:8002
-      # API key for CyborgDB
+      # CyborgDB Embedded - no external service needed!
       - key: CYBORGDB_API_KEY
         value: cyborg_9e8c1c2e25c944d78f41ac7f23376d23
+      # Data directory for embedded storage (ephemeral on free tier)
+      - key: CYBORGDB_DATA_DIR
+        value: /opt/render/project/src/cyborgdb_data
       - key: DATABASE_URL
         sync: false
       - key: GROQ_API_KEY
