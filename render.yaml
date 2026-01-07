@@ -20,27 +20,95 @@ services:
     plan: free
     healthCheckPath: /health
     envVars:
-      # Connect to CyborgDB service via public URL
+      # CyborgDB Connection
       - key: CYBORGDB_BASE_URL
         value: https://ciphercare-cyborgdb.onrender.com
       - key: CYBORGDB_API_KEY
         value: cyborg_9e8c1c2e25c944d78f41ac7f23376d23
+      
+      # Database
       - key: DATABASE_URL
-        sync: false
-      - key: GROQ_API_KEY
-        sync: false
-      - key: HF_API_TOKEN
-        sync: false
-      - key: HUGGINGFACE_API_KEY
-        sync: false
-      - key: JWT_SECRET_KEY
         sync: false
       - key: POSTGRES_URL
         sync: false
+      - key: CYBORGDB_CONNECTION_STRING
+        sync: false
+      
+      # Embedding Model
+      - key: EMBEDDING_MODEL
+        value: sentence-transformers/all-mpnet-base-v2
+      - key: EMBEDDING_DIMENSION
+        value: 768
+      
+      # Encryption (Vault Transit)
+      - key: ENCRYPTION_TYPE
+        value: vault_transit
+      - key: VAULT_ADDR
+        value: http://127.0.0.1:8200
+      - key: VAULT_TOKEN
+        sync: false
+      - key: VAULT_TRANSIT_KEY
+        value: cipercare
+      
+      # Auth0
+      - key: AUTH0_DOMAIN
+        value: dev-1uff34efey2efv7j.us.auth0.com
+      - key: AUTH0_CLIENT_ID
+        value: 2GACR0k4usHACfvm7g1EPHVatAfY3Hwv
+      - key: AUTH0_CLIENT_SECRET
+        sync: false
+      - key: AUTH0_AUDIENCE
+        value: https://cipercare/api
+      
+      # LLM Providers
+      - key: HUGGINGFACE_API_KEY
+        sync: false
+      - key: HF_API_TOKEN
+        sync: false
+      
+      # Groq API
+      - key: GROQ_API_KEY
+        sync: false
+      - key: GROQ_MODEL
+        value: openai/gpt-oss-120b
+      - key: LLM_ANSWER_GENERATION_ENABLED
+        value: true
+      - key: LLM_MAX_TOKENS
+        value: 1024
+      - key: LLM_TEMPERATURE
+        value: 0.7
+      
+      # Authentication & Security
+      - key: JWT_SECRET_KEY
+        sync: false
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 30
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      
+      # Brevo Email Service
+      - key: BREVO_API_KEY
+        sync: false
+      - key: SENDER_EMAIL
+        value: aadhiks9595@gmail.com
+      - key: SENDER_NAME
+        value: CipherCare
+      
+      # Frontend URL
+      - key: FRONTEND_URL
+        sync: false
+      
+      # Session Management
+      - key: SESSION_TIMEOUT_MINUTES
+        value: 30
+      - key: MAX_LOGIN_ATTEMPTS
+        value: 5
+      - key: ACCOUNT_LOCKOUT_MINUTES
+        value: 15
+      
+      # Legacy (for compatibility)
       - key: MAIL_USERNAME
         sync: false
       - key: MAIL_PASSWORD
-        sync: false
-      - key: FRONTEND_URL
         sync: false
 
