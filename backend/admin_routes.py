@@ -77,11 +77,15 @@ def upload_patient_data_task():
         
         logger.info("Using existing embedder service")
         
-        # Get CyborgDB manager and index
+        # Use existing CyborgDB manager from backend services (already initialized!)
         upload_status["status"] = "initializing_db"
-        upload_status["message"] = "Initializing CyborgDB..."
+        upload_status["message"] = "Using existing CyborgDB service..."
         
-        db = CyborgLiteManager()
+        db = services.get("db")
+        
+        if not db:
+            raise RuntimeError("CyborgDB service not initialized in backend")
+        
         index = db.get_index("patient_records_v1")
         logger.info("CyborgDB index ready")
         
