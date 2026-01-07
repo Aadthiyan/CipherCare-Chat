@@ -83,6 +83,10 @@ app = FastAPI(
     version="0.1.0"
 )
 
+# Include admin routes
+from backend.admin_routes import router as admin_router
+app.include_router(admin_router)
+
 # Global Services
 services = {}
 
