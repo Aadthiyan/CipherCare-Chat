@@ -105,10 +105,4 @@ services:
         value: 5
       - key: ACCOUNT_LOCKOUT_MINUTES
         value: 15
-      
-      # Legacy (for compatibility)
-      - key: MAIL_USERNAME
-        sync: false
-      - key: MAIL_PASSWORD
-        sync: false
 
