@@ -1,20 +1,24 @@
 services:
-  # Combined Backend + CyborgDB Service with Pre-loaded Patient Data
+  # Combined Backend + CyborgDB Service with Persistent Disk
   - type: web
-    name: ciphercare-backend
+    name: ciphercare-chat
     env: docker
-    dockerfilePath: ./docker/backend-with-preloaded-data.Dockerfile
+    dockerfilePath: ./docker/backend-with-cyborgdb.Dockerfile
     dockerContext: .
-    plan: starter  # Starter plan (2GB RAM) for all 221 patients
+    plan: starter  # Starter plan required for persistent disk
     healthCheckPath: /health
-    # No persistent disk needed - data is pre-loaded in the image!
+    # Persistent disk for CyborgDB data
+    disk:
+      name: cyborgdb-data
+      mountPath: /app/cyborgdb_data
+      sizeGB: 1
     envVars:
       # CyborgDB runs on localhost:8002 inside the same container
       - key: CYBORGDB_BASE_URL
         value: http://localhost:8002
-      # API key synced from Render environment (set in dashboard)
+      # API key for CyborgDB
       - key: CYBORGDB_API_KEY
-        sync: false  # Set this manually in Render dashboard
+        value: cyborg_9e8c1c2e25c944d78f41ac7f23376d23
       - key: DATABASE_URL
         sync: false
       - key: GROQ_API_KEY
