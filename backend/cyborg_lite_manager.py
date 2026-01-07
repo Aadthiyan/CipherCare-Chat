@@ -56,8 +56,9 @@ class CyborgLiteManager:
     _index_cache = {}  # Cache for loaded indexes - PREVENTS RECREATION!
     
     def __init__(self):
-        """Initialize CyborgDB Embedded client"""
+        """Initialize CyborgDB client (connects to separate service)"""
         api_key = os.getenv("CYBORGDB_API_KEY")
+        base_url = os.getenv("CYBORGDB_BASE_URL", "http://localhost:8002")
         
         if not api_key:
             raise ServiceInitializationError(
@@ -66,21 +67,16 @@ class CyborgLiteManager:
                 details={"required_vars": ["CYBORGDB_API_KEY"]}
             )
         
-        # Get data directory for persistent storage
-        data_dir = os.getenv("CYBORGDB_DATA_DIR", "/app/cyborgdb_data")
-        os.makedirs(data_dir, exist_ok=True)
-        
-        logger.info(f"Initializing CyborgDB Embedded (local storage at {data_dir})")
+        logger.info(f"Connecting to CyborgDB service at {base_url}")
         
         try:
-            # Initialize the embedded CyborgDB client (only once)
-            # For embedded mode, use empty string or local path as base_url
+            # Initialize the CyborgDB client (only once)
             if CyborgLiteManager._client is None:
                 CyborgLiteManager._client = cyborgdb.Client(
                     api_key=api_key,
-                    base_url=""  # Empty string for embedded mode
+                    base_url=base_url
                 )
-                logger.info("CyborgDB Embedded client initialized successfully")
+                logger.info("CyborgDB client connected successfully")
         except ConnectionError as e:
             raise ServiceInitializationError(
                 "CyborgDB",
