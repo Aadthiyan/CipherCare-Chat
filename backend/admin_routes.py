@@ -64,14 +64,18 @@ def upload_patient_data_task():
         
         logger.info(f"Found {len(patient_ids)} unique patients")
         
-        # Initialize embedder
+        # Use existing embedder from backend services (already initialized!)
         upload_status["status"] = "loading_model"
-        upload_status["message"] = "Loading embedding model..."
+        upload_status["message"] = "Using existing embedding service..."
         
-        # Import here to avoid startup error if package not installed
-        from sentence_transformers import SentenceTransformer
-        embedder = SentenceTransformer('sentence-transformers/all-mpnet-base-v2')
-        logger.info("Embedding model loaded")
+        # Import backend services
+        from backend.main import services
+        embedder = services.get("embedder")
+        
+        if not embedder:
+            raise RuntimeError("Embedder service not initialized in backend")
+        
+        logger.info("Using existing embedder service")
         
         # Get CyborgDB manager and index
         upload_status["status"] = "initializing_db"
@@ -90,21 +94,17 @@ def upload_patient_data_task():
             
             # Prepare batch for upload
             items = []
-            texts = []
             
-            for record in batch:
+            for j, record in enumerate(batch):
                 # Create text for embedding
                 text = f"{record.get('record_type', '')}: {record.get('display', '')} {record.get('description', '')}"
-                texts.append(text)
-            
-            # Generate embeddings
-            embeddings = embedder.encode(texts, show_progress_bar=False)
-            
-            # Prepare items for upsert
-            for j, record in enumerate(batch):
+                
+                # Generate embedding using existing service
+                embedding = embedder.get_embedding(text)
+                
                 items.append({
                     "id": str(record.get('record_id', f"record_{i+j}")),
-                    "vector": embeddings[j].tolist(),
+                    "vector": embedding,
                     "metadata": {
                         "patient_id": record.get('patient_id', ''),
                         "record_type": record.get('record_type', ''),
