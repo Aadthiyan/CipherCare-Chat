@@ -83,7 +83,7 @@ app = FastAPI(
     version="0.1.0"
 )
 
-# Include admin routes
+# Include admin routes (for patient data upload)
 from backend.admin_routes import router as admin_router
 app.include_router(admin_router)
 
