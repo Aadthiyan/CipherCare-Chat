@@ -10,7 +10,7 @@ import hashlib
 import time
 from typing import List, Dict, Any, Optional
 from functools import wraps
-import cyborgdb
+# cyborgdb_lite will be imported in __init__
 from backend.exceptions import (
     ServiceInitializationError,
     SearchError,
@@ -56,9 +56,9 @@ class CyborgLiteManager:
     _index_cache = {}  # Cache for loaded indexes - PREVENTS RECREATION!
     
     def __init__(self):
-        """Initialize CyborgDB client (connects to separate service)"""
+        """Initialize CyborgDB Embedded with PostgreSQL backend"""
         api_key = os.getenv("CYBORGDB_API_KEY")
-        base_url = os.getenv("CYBORGDB_BASE_URL", "http://localhost:8002")
+        connection_string = os.getenv("CYBORGDB_CONNECTION_STRING") or os.getenv("DATABASE_URL")
         
         if not api_key:
             raise ServiceInitializationError(
@@ -67,27 +67,57 @@ class CyborgLiteManager:
                 details={"required_vars": ["CYBORGDB_API_KEY"]}
             )
         
-        logger.info(f"Connecting to CyborgDB service at {base_url}")
-        
-        try:
-            # Initialize the CyborgDB client (only once)
-            if CyborgLiteManager._client is None:
-                CyborgLiteManager._client = cyborgdb.Client(
-                    api_key=api_key,
-                    base_url=base_url
-                )
-                logger.info("CyborgDB client connected successfully")
-        except ConnectionError as e:
+        if not connection_string:
             raise ServiceInitializationError(
                 "CyborgDB",
-                f"Failed to connect: {str(e)}",
-                details={"error_type": type(e).__name__}
+                "Missing database connection string (CYBORGDB_CONNECTION_STRING or DATABASE_URL)",
+                details={"required_vars": ["CYBORGDB_CONNECTION_STRING", "DATABASE_URL"]}
+            )
+        
+        logger.info("Initializing CyborgDB Embedded with PostgreSQL backend")
+        logger.info(f"Database: {connection_string.split('@')[1] if '@' in connection_string else 'configured'}")
+        
+        try:
+            # Import cyborgdb-lite for embedded mode
+            import cyborgdb_lite as cyborgdb
+            
+            # Initialize CyborgDB Embedded with PostgreSQL backing store
+            if CyborgLiteManager._client is None:
+                # Configure PostgreSQL backing for all storage locations
+                db_config = cyborgdb.DBConfig(
+                    location='postgres',
+                    connection_string=connection_string
+                )
+                
+                items_config = cyborgdb.DBConfig(
+                    location='postgres',
+                    table_name='cyborgdb_items',
+                    connection_string=connection_string
+                )
+                
+                CyborgLiteManager._client = cyborgdb.Client(
+                    api_key=api_key,
+                    index_location=db_config,
+                    config_location=db_config,
+                    items_location=items_config,
+                    cpu_threads=2  # Free tier: max 4 threads, use 2 to be safe
+                )
+                logger.info("✅ CyborgDB Embedded initialized successfully")
+                logger.info("   Mode: Embedded (no external service)")
+                logger.info("   Backend: PostgreSQL")
+                logger.info("   Storage: Persistent in database")
+                logger.info("   Limit: 1M vectors (cyborgdb-lite)")
+        except ImportError as e:
+            raise ServiceInitializationError(
+                "CyborgDB",
+                f"Failed to import cyborgdb_lite: {str(e)}. Install with: pip install cyborgdb-lite",
+                details={"error_type": "ImportError"}
             )
         except Exception as e:
             raise ServiceInitializationError(
                 "CyborgDB",
-                f"Initialization failed: {str(e)}",
-                details={"error_type": type(e).__name__}
+                f"Failed to initialize CyborgDB Embedded: {str(e)}",
+                details={"error_type": type(e).__name__, "backend": "postgresql"}
             )
     
     @classmethod

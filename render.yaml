@@ -1,17 +1,5 @@
 services:
-  # CyborgDB Service (Separate Free Tier Instance)
-  - type: web
-    name: ciphercare-cyborgdb
-    env: docker
-    dockerfilePath: ./docker/cyborgdb.Dockerfile
-    dockerContext: .
-    plan: free
-    healthCheckPath: /v1/health
-    envVars:
-      - key: CYBORGDB_API_KEY
-        value: cyborg_9e8c1c2e25c944d78f41ac7f23376d23
-
-  # Backend Service (Separate Free Tier Instance)
+  # Backend Service with CyborgDB Embedded (PostgreSQL-backed)
   - type: web
     name: ciphercare-backend
     env: python
@@ -20,13 +8,11 @@ services:
     plan: free
     healthCheckPath: /health
     envVars:
-      # CyborgDB Connection
-      - key: CYBORGDB_BASE_URL
-        value: https://ciphercare-cyborgdb.onrender.com
+      # CyborgDB Embedded - Uses PostgreSQL backing (no external service!)
       - key: CYBORGDB_API_KEY
         value: cyborg_9e8c1c2e25c944d78f41ac7f23376d23
       
-      # Database
+      # Database (used by both app and CyborgDB embedded)
       - key: DATABASE_URL
         sync: false
       - key: POSTGRES_URL
