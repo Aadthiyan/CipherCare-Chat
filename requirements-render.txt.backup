@@ -23,7 +23,7 @@ pyotp>=2.9.0
 slowapi>=0.1.9
 
 # CyborgDB Embedded (PostgreSQL-backed)
-cyborgdb-core>=0.12.0
+# cyborgdb-lite includes cyborgdb-core as dependency
 cyborgdb-lite>=0.12.0
 
 # Embeddings via HF API (no local models!)
