@@ -77,17 +77,16 @@ def upload_patient_data_task():
         
         logger.info("Using existing embedder service")
         
-        # Use existing CyborgDB manager from backend services (already initialized!)
+        # Use existing pgvector manager from backend services (already initialized!)
         upload_status["status"] = "initializing_db"
-        upload_status["message"] = "Using existing CyborgDB service..."
+        upload_status["message"] = "Using existing pgvector service..."
         
         db = services.get("db")
         
         if not db:
-            raise RuntimeError("CyborgDB service not initialized in backend")
+            raise RuntimeError("pgvector service not initialized in backend")
         
-        index = db.get_index("patient_records_v1")
-        logger.info("CyborgDB index ready")
+        logger.info("pgvector database ready")
         
         # Upload in batches
         upload_status["status"] = "uploading"
@@ -108,9 +107,9 @@ def upload_patient_data_task():
                 
                 items.append({
                     "id": str(record.get('record_id', f"record_{i+j}")),
+                    "patient_id": record.get('patient_id', ''),
                     "vector": embedding,
                     "metadata": {
-                        "patient_id": record.get('patient_id', ''),
                         "record_type": record.get('record_type', ''),
                         "display": record.get('display', ''),
                         "description": record.get('description', ''),
@@ -120,8 +119,9 @@ def upload_patient_data_task():
                     }
                 })
             
-            # Upload batch
-            index.upsert(items)
+            # Upload batch (async)
+            import asyncio
+            asyncio.create_task(db.upsert(items))
             
             upload_status["records_processed"] = i + len(batch)
             upload_status["message"] = f"Uploaded {upload_status['records_processed']}/{len(records)} records"

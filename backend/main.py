@@ -55,7 +55,7 @@ from backend.models import (
     ChangePasswordRequest
 )
 from backend.logging_config import setup_logging
-from backend.cyborg_lite_manager import get_cyborg_manager
+from backend.pgvector_manager import get_pgvector_manager
 from backend.exceptions import (
     CiperCareException,
     ServiceInitializationError,
@@ -122,19 +122,13 @@ async def startup_event():
                 details={"model": embedding_model, "error_type": type(e).__name__}
             )
         
-        # Load Vector Database (CyborgDB primary, Pinecone optional for cloud)
-        db_type = os.getenv("VECTOR_DB_TYPE", "cyborgdb").lower()
+        # Load Vector Database (PostgreSQL + pgvector)
         try:
-            if db_type == "pinecone":
-                from backend.vector_db_manager import PineconeManager
-                services["db"] = PineconeManager()
-                logger.info("Loaded Pinecone vector database (cloud)")
-            else:
-                # Default: Use CyborgDB (local, preferred)
-                services["db"] = get_cyborg_manager()
-                logger.info("Loaded CyborgDB vector database (local)")
+            # Initialize pgvector manager
+            services["db"] = await get_pgvector_manager()
+            logger.info("Loaded PostgreSQL + pgvector database")
             
-            services["crypto"] = getattr(services["db"], 'crypto_service', None)
+            services["crypto"] = None  # pgvector doesn't have built-in crypto service
             service_status["db"] = "✓"
         except ServiceInitializationError:
             service_status["db"] = "✗"
@@ -144,7 +138,7 @@ async def startup_event():
             raise ServiceInitializationError(
                 "Vector Database",
                 str(e),
-                details={"db_type": db_type, "error_type": type(e).__name__}
+                details={"db_type": "pgvector", "error_type": type(e).__name__}
             )
         
         # Load LLM
