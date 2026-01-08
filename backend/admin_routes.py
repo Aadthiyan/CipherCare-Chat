@@ -7,9 +7,10 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 import json
 import os
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from backend.cyborg_lite_manager import CyborgLiteManager
 import logging
+import asyncio
 
 logger = logging.getLogger(__name__)
 
@@ -24,18 +25,22 @@ class UploadStatus(BaseModel):
     patients: Optional[int] = 0
 
 
+class PrecomputedUploadRequest(BaseModel):
+    items: List[Dict[str, Any]]
+
+
 # Global upload status tracker
 upload_status = {
     "in_progress": False,
     "records_processed": 0,
     "total_records": 0,
     "status": "idle",
-    "message": ""
+    "message": "No upload in progress"
 }
 
 
 def upload_patient_data_task():
-    """Background task to upload patient data to CyborgDB"""
+    """Background task to upload patient data"""
     global upload_status
     
     try:
@@ -44,31 +49,23 @@ def upload_patient_data_task():
         upload_status["message"] = "Loading patient data file..."
         
         # Load patient data
-        data_file = "synthea_structured_cipercare.json"
-        if not os.path.exists(data_file):
-            raise FileNotFoundError(f"Data file not found: {data_file}")
+        data_file = os.path.join(os.path.dirname(__file__), '..', 'synthea_structured_cipercare.json')
         
         with open(data_file, 'r') as f:
-            all_records = json.load(f)
+            data = json.load(f)
         
-        # Limit to 150 patients (76,317 records)
-        records = all_records[:76317]
+        records = data['records']
         upload_status["total_records"] = len(records)
-        upload_status["message"] = f"Loaded {len(records)} records"
         
         logger.info(f"Loaded {len(records)} patient records")
         
-        # Count unique patients
-        patient_ids = set(r.get('patient_id') for r in records if r.get('patient_id'))
-        upload_status["message"] = f"Found {len(patient_ids)} unique patients"
+        # Get unique patients
+        patient_ids = set(record.get('patient_id', '') for record in records)
+        upload_status["patients"] = len(patient_ids)
         
         logger.info(f"Found {len(patient_ids)} unique patients")
         
-        # Use existing embedder from backend services (already initialized!)
-        upload_status["status"] = "loading_model"
-        upload_status["message"] = "Using existing embedding service..."
-        
-        # Import backend services
+        # Get embedder service from main app
         from backend.main import services
         embedder = services.get("embedder")
         
@@ -120,7 +117,6 @@ def upload_patient_data_task():
                 })
             
             # Upload batch (async)
-            import asyncio
             asyncio.create_task(db.upsert(items))
             
             upload_status["records_processed"] = i + len(batch)
@@ -143,17 +139,18 @@ def upload_patient_data_task():
 
 
 @router.post("/upload-patient-data", response_model=UploadStatus)
-async def trigger_patient_data_upload(background_tasks: BackgroundTasks):
+async def upload_patient_data(background_tasks: BackgroundTasks):
     """
-    Trigger patient data upload to CyborgDB Embedded
-    This runs in the background and can take ~30 minutes
+    Trigger patient data upload from synthea_structured_cipercare.json
+    This runs in the background and generates embeddings on-the-fly
     """
     global upload_status
     
+    # Check if upload already in progress
     if upload_status["in_progress"]:
         return UploadStatus(
             status="in_progress",
-            message="Upload already in progress",
+            message="Upload already in progress. Check /admin/upload-status for progress.",
             records_processed=upload_status["records_processed"],
             total_records=upload_status["total_records"]
         )
@@ -164,7 +161,7 @@ async def trigger_patient_data_upload(background_tasks: BackgroundTasks):
         "records_processed": 0,
         "total_records": 0,
         "status": "starting",
-        "message": "Upload started..."
+        "message": "Initializing upload..."
     }
     
     # Start background task
@@ -174,6 +171,36 @@ async def trigger_patient_data_upload(background_tasks: BackgroundTasks):
         status="started",
         message="Patient data upload started in background. Check /admin/upload-status for progress."
     )
+
+
+@router.post("/upload-precomputed")
+async def upload_precomputed_embeddings(request: PrecomputedUploadRequest):
+    """
+    Upload pre-computed embeddings directly (MUCH FASTER!)
+    This skips embedding generation and just stores the vectors
+    """
+    try:
+        # Get pgvector manager
+        from backend.main import services
+        db = services.get("db")
+        
+        if not db:
+            raise HTTPException(status_code=500, detail="pgvector service not initialized")
+        
+        # Upload items
+        await db.upsert(request.items)
+        
+        logger.info(f"Uploaded {len(request.items)} pre-computed embeddings")
+        
+        return {
+            "status": "success",
+            "message": f"Uploaded {len(request.items)} embeddings",
+            "count": len(request.items)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to upload pre-computed embeddings: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.get("/upload-status", response_model=UploadStatus)
