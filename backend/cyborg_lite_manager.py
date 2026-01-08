@@ -74,8 +74,12 @@ class CyborgLiteManager:
                 details={"required_vars": ["CYBORGDB_CONNECTION_STRING", "DATABASE_URL"]}
             )
         
+        # Clean connection string - remove parameters CyborgDB doesn't support
+        # Remove channel_binding which causes "bad optional access" error
+        cleaned_connection_string = connection_string.replace("&channel_binding=require", "").replace("?channel_binding=require&", "?")
+        
         logger.info("Initializing CyborgDB Embedded with PostgreSQL backend")
-        logger.info(f"Database: {connection_string.split('@')[1] if '@' in connection_string else 'configured'}")
+        logger.info(f"Database: {cleaned_connection_string.split('@')[1] if '@' in cleaned_connection_string else 'configured'}")
         
         try:
             # Import cyborgdb-core for embedded mode (v0.14.x)
@@ -86,13 +90,13 @@ class CyborgLiteManager:
                 # Configure PostgreSQL backing for all storage locations
                 db_config = cyborgdb.DBConfig(
                     location='postgres',
-                    connection_string=connection_string
+                    connection_string=cleaned_connection_string
                 )
                 
                 items_config = cyborgdb.DBConfig(
                     location='postgres',
                     table_name='cyborgdb_items',
-                    connection_string=connection_string
+                    connection_string=cleaned_connection_string
                 )
                 
                 CyborgLiteManager._client = cyborgdb.Client(
