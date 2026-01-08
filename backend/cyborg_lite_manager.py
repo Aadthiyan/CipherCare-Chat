@@ -78,8 +78,8 @@ class CyborgLiteManager:
         logger.info(f"Database: {connection_string.split('@')[1] if '@' in connection_string else 'configured'}")
         
         try:
-            # Import cyborgdb-lite for embedded mode
-            import cyborgdb_lite as cyborgdb
+            # Import cyborgdb-core for embedded mode (v0.14.x)
+            import cyborgdb_core as cyborgdb
             
             # Initialize CyborgDB Embedded with PostgreSQL backing store
             if CyborgLiteManager._client is None:
@@ -110,7 +110,7 @@ class CyborgLiteManager:
         except ImportError as e:
             raise ServiceInitializationError(
                 "CyborgDB",
-                f"Failed to import cyborgdb_lite: {str(e)}. Install with: pip install cyborgdb-lite",
+                f"Failed to import cyborgdb_core: {str(e)}. Install with: pip install cyborgdb-core",
                 details={"error_type": "ImportError"}
             )
         except Exception as e:
