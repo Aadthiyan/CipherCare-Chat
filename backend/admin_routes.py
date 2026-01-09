@@ -54,7 +54,14 @@ async def upload_patient_data_task():
         with open(data_file, 'r') as f:
             data = json.load(f)
         
-        records = data['records']
+        # Handle both list and dict formats
+        if isinstance(data, list):
+            records = data
+        elif isinstance(data, dict) and 'records' in data:
+            records = data['records']
+        else:
+            raise ValueError("Unexpected JSON format")
+            
         upload_status["total_records"] = len(records)
         
         logger.info(f"Loaded {len(records)} patient records")
