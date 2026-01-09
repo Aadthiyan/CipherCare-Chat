@@ -187,15 +187,15 @@ async def upload_precomputed_embeddings(request: PrecomputedUploadRequest):
     This skips embedding generation and just stores the vectors
     """
     try:
-        # Get pgvector manager
+        # Get multi-database manager
         from backend.main import services
         db = services.get("db")
         
         if not db:
-            raise HTTPException(status_code=500, detail="pgvector service not initialized")
+            raise HTTPException(status_code=500, detail="Multi-database service not initialized")
         
-        # Upload items
-        await db.upsert(request.items)
+        # Upload items with sharding (start_index=0 for precomputed uploads)
+        await db.upsert_vectors(request.items, start_index=0)
         
         logger.info(f"Uploaded {len(request.items)} pre-computed embeddings")
         
