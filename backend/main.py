@@ -55,7 +55,7 @@ from backend.models import (
     ChangePasswordRequest
 )
 from backend.logging_config import setup_logging
-from backend.pgvector_manager import get_pgvector_manager
+from backend.multi_database_manager import get_multi_db_manager
 from backend.exceptions import (
     CiperCareException,
     ServiceInitializationError,
@@ -122,13 +122,13 @@ async def startup_event():
                 details={"model": embedding_model, "error_type": type(e).__name__}
             )
         
-        # Load Vector Database (PostgreSQL + pgvector)
+        # Load Vector Database (Multi-Database with sharding)
         try:
-            # Initialize pgvector manager
-            services["db"] = await get_pgvector_manager()
-            logger.info("Loaded PostgreSQL + pgvector database")
+            # Initialize multi-database manager
+            services["db"] = await get_multi_db_manager()
+            logger.info("Loaded Multi-Database manager (PostgreSQL + pgvector)")
             
-            services["crypto"] = None  # pgvector doesn't have built-in crypto service
+            services["crypto"] = None  # Multi-DB doesn't have built-in crypto service
             service_status["db"] = "✓"
         except ServiceInitializationError:
             service_status["db"] = "✗"
@@ -138,7 +138,7 @@ async def startup_event():
             raise ServiceInitializationError(
                 "Vector Database",
                 str(e),
-                details={"db_type": "pgvector", "error_type": type(e).__name__}
+                details={"db_type": "multi-database", "error_type": type(e).__name__}
             )
         
         # Load LLM
@@ -636,12 +636,12 @@ async def query_patient_data(
                 details={"error_type": type(e).__name__}
             )
             
-        # --- Step 3: CyborgDB Search ---
+        # --- Step 3: Vector Search (Multi-Database) ---
         raw_results = []
         try:
-            raw_results = db.search(
-                query_vec, 
-                k=query_req.retrieve_k, 
+            raw_results = await db.query_vectors(
+                query_vector=query_vec, 
+                top_k=query_req.retrieve_k, 
                 patient_id=query_req.patient_id
             )
             logger.info(f"Search found {len(raw_results)} results for {query_req.patient_id}")
@@ -650,7 +650,7 @@ async def query_patient_data(
         except Exception as e:
             logger.error(f"Search failed: {str(e)[:100]}")
             raise SearchError(
-                reason="CyborgDB search failed - database unavailable",
+                reason="Vector search failed - database unavailable",
                 patient_id=query_req.patient_id,
                 details={"error": str(e)[:200], "question": query_req.question[:100]}
             )

@@ -74,18 +74,18 @@ def upload_patient_data_task():
         
         logger.info("Using existing embedder service")
         
-        # Use existing pgvector manager from backend services (already initialized!)
+        # Use existing multi-database manager from backend services
         upload_status["status"] = "initializing_db"
-        upload_status["message"] = "Using existing pgvector service..."
+        upload_status["message"] = "Using multi-database service..."
         
         db = services.get("db")
         
         if not db:
-            raise RuntimeError("pgvector service not initialized in backend")
+            raise RuntimeError("Multi-database service not initialized in backend")
         
-        logger.info("pgvector database ready")
+        logger.info("Multi-database manager ready")
         
-        # Upload in batches
+        # Upload in batches with sharding
         upload_status["status"] = "uploading"
         batch_size = 1000
         
@@ -116,8 +116,8 @@ def upload_patient_data_task():
                     }
                 })
             
-            # Upload batch (async)
-            asyncio.create_task(db.upsert(items))
+            # Upload batch with sharding (records 0-49999 → DB1, 50000+ → DB2)
+            await db.upsert_vectors(items, start_index=i)
             
             upload_status["records_processed"] = i + len(batch)
             upload_status["message"] = f"Uploaded {upload_status['records_processed']}/{len(records)} records"
