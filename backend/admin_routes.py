@@ -39,7 +39,7 @@ upload_status = {
 }
 
 
-def upload_patient_data_task():
+async def upload_patient_data_task():
     """Background task to upload patient data"""
     global upload_status
     
