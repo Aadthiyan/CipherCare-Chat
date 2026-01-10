@@ -670,22 +670,42 @@ async def query_patient_data(
                     doc_type = "encrypted_document"
                     doc_date = "encrypted"
                 else:
-                    # Real patient data from upload - extract available fields
-                    patient_id = metadata.get('patient_id', 'Unknown')
-                    gender = metadata.get('gender', 'Unknown')
-                    birth_date = metadata.get('birth_date', 'Unknown')
-                    data_source = metadata.get('data_source', 'Unknown')
-                    num_conditions = metadata.get('num_conditions', 0)
-                    num_medications = metadata.get('num_medications', 0)
-                    primary_conditions = metadata.get('primary_conditions', 'N/A')
+                    # Real FHIR-compliant medical record data
+                    record_type = metadata.get('record_type', 'observation')
+                    display = metadata.get('display', 'Medical Record')
+                    effective_date = metadata.get('effective_date', metadata.get('created_at', 'Unknown'))
+                    text_summary = metadata.get('text_summary', '')
+                    value = metadata.get('value', '')
+                    unit = metadata.get('unit', '')
+                    status = metadata.get('status', 'final')
+                    data_source = metadata.get('data_source', 'Synthea')
                     
-                    snippet = f"Patient {patient_id} - {gender}, DOB: {birth_date}\n"
-                    snippet += f"Primary Conditions: {primary_conditions}\n"
-                    snippet += f"Total Conditions: {num_conditions}, Medications: {num_medications}\n"
-                    snippet += f"Data Source: {data_source}"
+                    # Extract code information
+                    code_info = metadata.get('code', {})
+                    if isinstance(code_info, dict):
+                        code_system = code_info.get('system', '')
+                        code_value = code_info.get('code', metadata.get('loinc_code', ''))
+                        code_display = code_info.get('display', display)
+                    else:
+                        code_system = ''
+                        code_value = metadata.get('loinc_code', '')
+                        code_display = display
                     
-                    doc_type = metadata.get('record_type', 'patient_summary')
-                    doc_date = birth_date
+                    # Build comprehensive snippet
+                    snippet = f"{effective_date}: {display}\n"
+                    
+                    if text_summary:
+                        snippet += f"{text_summary}\n"
+                    elif value and unit:
+                        snippet += f"Value: {value} {unit}\n"
+                    
+                    if code_value:
+                        snippet += f"Code: {code_value} ({code_system})\n"
+                    
+                    snippet += f"Status: {status} | Source: {data_source}"
+                    
+                    doc_type = record_type
+                    doc_date = effective_date
                 
                 context_text += f"[Document {i+1} - type: {doc_type}, date: {doc_date}]\n{snippet}\n\n"
                 
@@ -693,7 +713,7 @@ async def query_patient_data(
                     type=doc_type,
                     date=doc_date,
                     snippet=snippet[:200] + "...",
-                    similarity=float(res.get('score', 0))
+                    similarity=float(res.get('similarity', 0))
                 ))
                 
             except Exception as e:
@@ -711,7 +731,7 @@ async def query_patient_data(
             else:
                 generated_answer = llm.generate_answer(query_req.question, context_text)
                 # Estimate confidence based on top similarity
-                confidence = float(raw_results[0]['score']) if raw_results else 0.0
+                confidence = float(raw_results[0]['similarity']) if raw_results else 0.0
                 
         except LLMError as e:
             logger.error(f"LLM error: {e.message}")

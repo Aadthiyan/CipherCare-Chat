@@ -1,9 +1,10 @@
 """
 Multi-Database Manager for CipherCare
-Uses 3 free databases to maximize storage:
+Uses 4 databases to maximize storage:
 - DB1: User authentication (Neon)
-- DB2: Patient vectors part 1 (Neon)
-- DB3: Patient vectors part 2 (Supabase)
+- DB2: Patient vectors part 1 (Neon) - 50,000 records
+- DB3: Patient vectors part 2 (Neon) - 56,000 records
+- DB4: Patient vectors part 3 (Neon) - 5,060 records
 """
 
 import os
@@ -27,12 +28,17 @@ class MultiDatabaseManager:
         # Database 3: Patient vectors (part 2)
         self.vectors_db2_url = os.getenv("VECTORS_DB2_URL")
         
+        # Database 4: Patient vectors (part 3)
+        self.vectors_db3_url = os.getenv("VECTORS_DB3_URL")
+        
         self.auth_pool = None
         self.vectors_pool1 = None
         self.vectors_pool2 = None
+        self.vectors_pool3 = None
         
         # Sharding strategy: split by patient_id
-        self.shard_threshold = 50000  # First 50K in DB1, rest in DB2
+        self.shard_threshold_1 = 50000  # First 50K in DB1
+        self.shard_threshold_2 = 106000  # Next 56K in DB2, rest in DB3
     
     async def initialize(self):
         """Initialize all database connections"""
@@ -99,13 +105,42 @@ class MultiDatabaseManager:
                 """)
             
             logger.info("✅ Vector database 2 connected")
+        
+        # Initialize vector database 3
+        if self.vectors_db3_url:
+            self.vectors_pool3 = await asyncpg.create_pool(
+                self.vectors_db3_url.replace("&channel_binding=require", ""),
+                min_size=2,
+                max_size=5
+            )
+            
+            # Create tables and indexes
+            async with self.vectors_pool3.acquire() as conn:
+                await conn.execute("CREATE EXTENSION IF NOT EXISTS vector")
+                await conn.execute("""
+                    CREATE TABLE IF NOT EXISTS patient_vectors (
+                        id TEXT PRIMARY KEY,
+                        patient_id TEXT NOT NULL,
+                        embedding vector(768),
+                        metadata JSONB,
+                        created_at TIMESTAMP DEFAULT NOW()
+                    )
+                """)
+                await conn.execute("""
+                    CREATE INDEX IF NOT EXISTS patient_vectors_patient_id_idx 
+                    ON patient_vectors (patient_id)
+                """)
+            
+            logger.info("✅ Vector database 3 connected")
     
     def _get_vector_pool(self, record_number: int):
         """Determine which vector database to use based on record number"""
-        if record_number < self.shard_threshold:
+        if record_number < self.shard_threshold_1:
             return self.vectors_pool1
-        else:
+        elif record_number < self.shard_threshold_2:
             return self.vectors_pool2
+        else:
+            return self.vectors_pool3
     
     async def upsert_vectors(self, items: List[Dict[str, Any]], start_index: int = 0):
         """
@@ -118,13 +153,16 @@ class MultiDatabaseManager:
         # Split items between databases
         db1_items = []
         db2_items = []
+        db3_items = []
         
         for i, item in enumerate(items):
             record_num = start_index + i
-            if record_num < self.shard_threshold:
+            if record_num < self.shard_threshold_1:
                 db1_items.append(item)
-            else:
+            elif record_num < self.shard_threshold_2:
                 db2_items.append(item)
+            else:
+                db3_items.append(item)
         
         # Insert into database 1
         if db1_items and self.vectors_pool1:
@@ -161,6 +199,24 @@ class MultiDatabaseManager:
                         metadata = EXCLUDED.metadata
                 """, records)
                 logger.info(f"Inserted {len(db2_items)} records into DB2")
+        
+        # Insert into database 3
+        if db3_items and self.vectors_pool3:
+            async with self.vectors_pool3.acquire() as conn:
+                records = [
+                    (item['id'], item['patient_id'], item['vector'], 
+                     __import__('json').dumps(item['metadata']))
+                    for item in db3_items
+                ]
+                await conn.executemany("""
+                    INSERT INTO patient_vectors (id, patient_id, embedding, metadata)
+                    VALUES ($1, $2, $3, $4)
+                    ON CONFLICT (id) DO UPDATE SET
+                        patient_id = EXCLUDED.patient_id,
+                        embedding = EXCLUDED.embedding,
+                        metadata = EXCLUDED.metadata
+                """, records)
+                logger.info(f"Inserted {len(db3_items)} records into DB3")
     
     async def query_vectors(
         self, 
@@ -250,6 +306,39 @@ class MultiDatabaseManager:
                     for row in rows
                 ])
         
+        # Query database 3
+        if self.vectors_pool3:
+            async with self.vectors_pool3.acquire() as conn:
+                await register_vector(conn)
+                
+                if patient_id:
+                    rows = await conn.fetch("""
+                        SELECT id, patient_id, metadata,
+                               1 - (embedding <=> $1::vector) as similarity
+                        FROM patient_vectors
+                        WHERE patient_id = $2
+                        ORDER BY embedding <=> $1::vector
+                        LIMIT $3
+                    """, query_vector, patient_id, top_k)
+                else:
+                    rows = await conn.fetch("""
+                        SELECT id, patient_id, metadata,
+                               1 - (embedding <=> $1::vector) as similarity
+                        FROM patient_vectors
+                        ORDER BY embedding <=> $1::vector
+                        LIMIT $2
+                    """, query_vector, top_k)
+                
+                results.extend([
+                    {
+                        'id': row['id'],
+                        'patient_id': row['patient_id'],
+                        'metadata': json.loads(row['metadata']) if row['metadata'] else {},
+                        'similarity': float(row['similarity'])
+                    }
+                    for row in rows
+                ])
+        
         # Sort by similarity and return top_k
         results.sort(key=lambda x: x['similarity'], reverse=True)
         return results[:top_k]
@@ -285,6 +374,15 @@ class MultiDatabaseManager:
                     'status': 'connected'
                 }
         
+        # Vector DB3 stats
+        if self.vectors_pool3:
+            async with self.vectors_pool3.acquire() as conn:
+                count = await conn.fetchval("SELECT COUNT(*) FROM patient_vectors")
+                stats['vectors_db3'] = {
+                    'records': count,
+                    'status': 'connected'
+                }
+        
         return stats
     
     async def close(self):
@@ -295,6 +393,8 @@ class MultiDatabaseManager:
             await self.vectors_pool1.close()
         if self.vectors_pool2:
             await self.vectors_pool2.close()
+        if self.vectors_pool3:
+            await self.vectors_pool3.close()
 
 
 # Singleton instance
